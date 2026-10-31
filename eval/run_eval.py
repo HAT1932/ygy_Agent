@@ -397,7 +397,7 @@ def service_env(svc: Any) -> dict[str, Any]:
         info = svc.health() or {}
     except Exception:
         pass
-    return {
+    env = {
         "python": platform.python_version(),
         "platform": platform.platform(),
         "offline_mode": info.get("offline_mode"),
@@ -405,6 +405,16 @@ def service_env(svc: Any) -> dict[str, Any]:
         "ruleset_version": info.get("ruleset_version"),
         "providers": info.get("providers"),
     }
+    # 规则集制品指纹：报告可复现的前提（docs/04 §5.11），跑分也要能对上是哪份规则
+    try:
+        from src.rules.loader import load_rules, ruleset_meta
+
+        meta = ruleset_meta(load_rules(ROOT / "rules"))
+        env["ruleset_sha256"] = meta.get("sha256")
+        env["rule_count_meta"] = meta.get("count")
+    except Exception:
+        env["ruleset_sha256"] = None
+    return env
 
 
 # --------------------------------------------------------------------------
