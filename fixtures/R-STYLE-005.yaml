@@ -40,7 +40,7 @@ cases:
         formality: 0.2
         area_ratio: 0.12
   features:
-    style_cosine: 0.4
+    style_cosine: 0.3
     occasion_fit_prob: 0.8
   structure:
     visual_waist_y: 0.5

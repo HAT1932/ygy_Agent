@@ -5,10 +5,16 @@ title: 明度断层过大
 severity: soft
 scope: cross_garment
 condition:
-  field: garment.top.color.lightness
-  op: abs_diff_gt
-  other_field: garment.bottom.color.lightness
-  value: 0.65
+  all:
+  - {field: garment.top.color.lightness, op: abs_diff_gt, other_field: garment.bottom.color.lightness, value: 0.65}
+  # F-09 豁免：上半身与下半身同为中性色（黑白灰）时，高明度对比是经典剪裁手法，不是缺陷
+  - not:
+      any:
+      - all:
+        - {field: garment.top.color.is_neutral, op: is_true}
+        - {field: garment.bottom.color.is_neutral, op: is_true}
+      # F-09 豁免：正式场合的黑白高对比是正装标准配置
+      - {field: outfit.occasion, op: in, value: [formal]}
 effect: penalty
 score_impact:
   dimension: D1
@@ -18,6 +24,9 @@ evidence_fields:
 - outfit.colors.top_bottom_lightness_diff
 - garment.top.color.lightness
 - garment.bottom.color.lightness
+- garment.top.color.is_neutral
+- garment.bottom.color.is_neutral
+- outfit.occasion
 source: domain_expert
 status: active
 suppresses: []

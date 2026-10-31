@@ -136,9 +136,13 @@ def _is_boost(hit: dict[str, Any]) -> bool:
 
 
 def _hit_gain(hit: dict[str, Any]) -> float:
+    """该命中项**实际生效**的分数绝对值。
+
+    注意：`delta_applied == 0` 是合法值（预算耗尽被完全截断），此时可回收收益就是 0，
+    不能回退到 `delta_schema`，否则 expected_gain 会虚报（违反 docs/04 §5.8.2 自洽要求）。
+    """
     applied = hit.get("delta_applied")
-    raw = hit.get("delta_schema")
-    value = applied if applied not in (None, 0, 0.0) else raw
+    value = applied if applied is not None else hit.get("delta_schema")
     return abs(_num(value, 0.0))
 
 

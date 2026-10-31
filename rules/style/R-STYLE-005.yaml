@@ -7,7 +7,8 @@ scope: outfit
 condition:
   field: derived.cosine_uv
   op: lt
-  value: 0.55
+  # F-03 后端标定：hash 模式下画像↔搭配余弦 p10≈0.35（原 0.55 会误罚约 70%）
+  value: 0.35
 effect: penalty
 score_impact:
   dimension: D2

@@ -10,6 +10,8 @@ condition:
     op: is_true
   - field: outfit.materials.has_winter_item
     op: is_true
+  # F-09 豁免：有层次的穿搭（外套叠穿）里冬夏材质混搭是正常的，冲突只见于无层次平铺
+  - {field: outfit.structure.layer_depth, op: lte, value: 1}
 effect: penalty
 score_impact:
   dimension: D5
@@ -18,6 +20,7 @@ explain_template: 同一套搭配里同时出现夏季轻薄材质和冬季保�
 evidence_fields:
 - outfit.materials.has_summer_fabric
 - outfit.materials.has_winter_item
+- outfit.structure.layer_depth
 source: domain_expert
 status: active
 suppresses: []

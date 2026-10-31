@@ -212,6 +212,16 @@ def run_case(svc: Any, case: dict[str, Any], profile_cache: dict[tuple, Any],
     gain_ok = True
     gain_detail: list[dict[str, Any]] = []
     for s in report.suggestions:
+        # 无规则依据的兜底建议（reason_rule_ids 为空）不构成"由规则驱动的收益声明"，
+        # 无自洽性可校验；只有声称由某条规则驱动时，expected_gain 才必须等于其生效扣分之和。
+        if not s.reason_rule_ids:
+            gain_detail.append({
+                "suggestion": s.action,
+                "expected_gain": s.expected_gain,
+                "sum_reason_delta": 0.0,
+                "skipped": "no_rule_basis",
+            })
+            continue
         expected = sum(abs(hit_by_id[r].delta_applied)
                        for r in s.reason_rule_ids if r in hit_by_id)
         if abs(float(s.expected_gain) - expected) > 0.05:

@@ -8,9 +8,10 @@ condition:
   all:
   - field: derived.cosine_uv
     op: between
+    # F-03 后端标定：hash 模式观测上界 0.585，原窗口 0.60–0.75 永远不可达
     value:
-    - 0.6
-    - 0.75
+    - 0.45
+    - 0.58
   - field: outfit.style.explore_overlap_count
     op: gte
     value: 1

@@ -279,7 +279,7 @@ def test_lint_is_clean_and_meta_stable(rules: list[Rule]) -> None:
     assert lint_rules(rules) == []
     meta = ruleset_meta(rules)
     assert meta["count"] == 50
-    assert meta["version"] == "rs-2026.10.1"
+    assert meta["version"] == "rs-2026.10.2"
     assert re.fullmatch(r"[0-9a-f]{64}", meta["sha256"])
     assert ruleset_meta(list(reversed(rules)))["sha256"] == meta["sha256"]
 

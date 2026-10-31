@@ -42,13 +42,17 @@ python scripts/rule_coverage_report.py     # 规则判别力体检（找出无�
 
 | 已验证的事实 | 实测值 |
 |---|---|
-| 规则集 | 50 条，lint 0 error，COLOR 12 / STYLE 10 / PROP 10 / OCC 10 / DET 8 |
-| 测试 | 182 passed（契约/评分/解析/双塔/合成/规则/API） |
-| 评测 | Spearman **0.7376**、追溯率 **100%**、确定性 **100%**、硬规则 veto 生效 |
+| 规则集 | 50 条，lint 0 error，COLOR 12 / STYLE 10 / PROP 10 / OCC 10 / DET 8（`rs-2026.10.2`） |
+| 测试 | **182 项全过**（契约/评分/解析/双塔/合成/规则/API） |
+| 评测（20 套） | Spearman **0.8557**（p=0.0000）、追溯率 **100%**、确定性 **100%**、`expected_gain` 全自洽 |
+| **双塔召回** | 用户塔（画像向量）× 搭配塔（`data/outfits.yaml` **12 条候选库**）→ top-5，报告内可见 |
+| 分数分布 | 50 组扫描 **36.4 – 81.0**，四档 verdict 全部可达 |
+| 画像区分度 | 纯统计画像 **5.0 分**（FAIL）；声明偏好后 **8.0 分**（PASS，verdict 分歧 50%） |
 | 真实 VLM | qwen3.7-plus，512² 图 = **258 image tokens**，≈11 s/图 |
 | 真实 LLM | deepseek-flash 润色，≈2.3 s，总评会引用规则证据（色相跨度/冷暖占比/同源度） |
 
-⚠️ **实现过程中发现的 7 个设计问题**（含「强烈推荐档不可达」「34% 规则无判别力」「评测集是合成的」）记录在 **[10-implementation-findings](./docs/10-implementation-findings.md)**，上线前必须逐条处理。
+⚠️ **实现过程中发现的 9 个设计问题**（含「34% 规则无判别力」「评测集是合成的」「个性化需用户声明偏好」）记录在 **[10-implementation-findings](./docs/10-implementation-findings.md)**，上线前必须逐条处理。
+其中 F-01（上限不可达）已通过修误伤 + 复活死规则解决，未动 `base_score`；F-08（个性化）能力已就绪但必须引导用户填偏好。
 
 ---
 

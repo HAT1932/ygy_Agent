@@ -164,9 +164,17 @@ class StubService:
                 "rule_count": 50,
                 "providers": {"vlm": "mock", "llm": "template", "embedding": "hash"}}
 
-    def create_profile(self, image_refs: list[str], note: str | None = None):
+    def create_profile(self, image_refs: list[str], note: str | None = None,
+                       banned_styles: list[str] | None = None,
+                       explore_tags: list[str] | None = None):
         pid = "prf_" + str(abs(hash(tuple(image_refs))) % 10**8)
         profile = make_profile(pid)
+        # 契约 v1.1：用户主观偏好会写入画像（F-08 的关键一环），stub 也要反映
+        if banned_styles or explore_tags:
+            profile = profile.model_copy(update={
+                "banned_styles": list(banned_styles or []),
+                "explore_tags": list(explore_tags or []),
+            })
         self.profiles[pid] = profile
         outfit = make_outfit("oft_" + pid[4:])
         self.outfits[outfit.outfit_id] = outfit

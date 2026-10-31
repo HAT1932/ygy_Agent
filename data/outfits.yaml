@@ -1,0 +1,123 @@
+# 搭配库（双塔召回中「搭配塔」的候选池）
+#
+# 这是「双塔召回」的被召回侧：用户塔（画像向量）× 搭配塔（本库各条目的向量）。
+# 刻意与用户的参考穿搭分开 —— 否则召回等于把输入原样吐回来，失去意义。
+#
+# 字段说明：Color 只需给 hex（hue/saturation/lightness 由代码确定性推导）；
+# family 用于色彩规则（cool/warm/neutral/earth/vivid/metal）。
+# formality 用 1–5 整数（1=家居 3=休闲 4=通勤 5=正式），代码按 (f-1)/4 映射到 0–1。
+
+library_version: lib-2026.10
+items:
+  - item_id: lib-commute-01
+    title: 藏青针织 + 燕麦直筒裤
+    occasion: commute
+    style_tags: [通勤知性, 极简]
+    items:
+      - {slot: upper, category: 针织衫, color: "#1F2A44", color_name: 藏青, family: cool, fit: regular, length: regular, material: 羊毛, formality: 4, style_tags: [通勤知性, 极简]}
+      - {slot: lower, category: 直筒裤, color: "#DDD3C0", color_name: 燕麦, family: neutral, fit: regular, length: long, material: 棉, formality: 4, style_tags: [通勤知性, 极简]}
+      - {slot: shoes, category: 乐福鞋, color: "#2B2B2B", color_name: 黑, family: neutral, fit: regular, material: 皮革, formality: 4, style_tags: [通勤知性]}
+
+  - item_id: lib-commute-02
+    title: 黑西装 + 白衬衫 + 深灰西裤
+    occasion: formal
+    style_tags: [商务正装, 经典]
+    items:
+      - {slot: outer, category: 西装外套, color: "#1A1A1A", color_name: 黑, family: neutral, fit: regular, length: regular, material: 羊毛, formality: 5, style_tags: [商务正装, 经典], is_structured: true}
+      - {slot: upper, category: 衬衫, color: "#FFFFFF", color_name: 白, family: neutral, fit: regular, length: regular, material: 棉, formality: 5, style_tags: [商务正装, 经典]}
+      - {slot: lower, category: 西裤, color: "#3A3A3A", color_name: 深灰, family: neutral, fit: regular, length: long, material: 羊毛, formality: 5, style_tags: [商务正装, 经典]}
+      - {slot: shoes, category: 牛津鞋, color: "#0F0F0F", color_name: 黑, family: neutral, fit: regular, material: 皮革, formality: 5, style_tags: [商务正装]}
+
+  - item_id: lib-commute-03
+    title: 米白衬衫 + 驼色阔腿裤
+    occasion: commute
+    style_tags: [法式, 通勤知性]
+    items:
+      - {slot: upper, category: 衬衫, color: "#F5F0E6", color_name: 米白, family: neutral, fit: regular, length: regular, material: 真丝, formality: 4, style_tags: [法式, 通勤知性]}
+      - {slot: lower, category: 阔腿裤, color: "#B08D6A", color_name: 驼色, family: earth, fit: loose, length: long, material: 混纺, formality: 4, style_tags: [法式]}
+      - {slot: shoes, category: 乐福鞋, color: "#6B4B2A", color_name: 棕, family: earth, fit: regular, material: 皮革, formality: 4, style_tags: [法式]}
+      - {slot: accessory, category: 丝巾, color: "#C8A98A", color_name: 浅驼, family: earth, fit: regular, material: 真丝, formality: 4, style_tags: [法式]}
+
+  - item_id: lib-date-01
+    title: 碎花连衣裙 + 米色开衫
+    occasion: date
+    style_tags: [法式, 浪漫]
+    items:
+      - {slot: dress, category: 连衣裙, color: "#E8D5C4", color_name: 米杏, family: neutral, fit: regular, length: long, material: 雪纺, formality: 3, style_tags: [法式, 浪漫], pattern: 碎花}
+      - {slot: outer, category: 开衫, color: "#EFE7DA", color_name: 米色, family: neutral, fit: loose, length: regular, material: 针织, formality: 3, style_tags: [法式]}
+      - {slot: shoes, category: 单鞋, color: "#D9BFA8", color_name: 裸色, family: neutral, fit: regular, material: 皮革, formality: 3, style_tags: [法式]}
+
+  - item_id: lib-date-02
+    title: 黑皮衣 + 白T + 黑半裙
+    occasion: date
+    style_tags: [甜酷, 街头潮流]
+    items:
+      - {slot: outer, category: 皮夹克, color: "#111111", color_name: 黑, family: neutral, fit: regular, length: regular, material: 皮革, formality: 3, style_tags: [甜酷, 街头潮流], is_structured: true}
+      - {slot: upper, category: T恤, color: "#FFFFFF", color_name: 白, family: neutral, fit: regular, length: regular, material: 棉, formality: 2, style_tags: [极简]}
+      - {slot: lower, category: 半身裙, color: "#1A1A1A", color_name: 黑, family: neutral, fit: regular, length: regular, material: 混纺, formality: 3, style_tags: [甜酷]}
+      - {slot: shoes, category: 马丁靴, color: "#141414", color_name: 黑, family: neutral, fit: oversized, material: 皮革, formality: 2, style_tags: [街头潮流]}
+
+  - item_id: lib-casual-01
+    title: 灰卫衣 + 牛仔直筒
+    occasion: casual
+    style_tags: [休闲, 街头潮流]
+    items:
+      - {slot: upper, category: 卫衣, color: "#8A8F98", color_name: 浅灰, family: neutral, fit: loose, length: regular, material: 棉, formality: 2, style_tags: [休闲, 街头潮流]}
+      - {slot: lower, category: 牛仔裤, color: "#3B4A5A", color_name: 深蓝, family: cool, fit: regular, length: long, material: 牛仔, formality: 2, style_tags: [休闲]}
+      - {slot: shoes, category: 运动鞋, color: "#F0F0F0", color_name: 白, family: neutral, fit: regular, material: 织物, formality: 2, style_tags: [休闲], is_sport_derived: true}
+
+  - item_id: lib-casual-02
+    title: 米色衬衫 + 卡其工装裤
+    occasion: casual
+    style_tags: [日系, 休闲]
+    items:
+      - {slot: upper, category: 衬衫, color: "#E4DCCB", color_name: 米色, family: neutral, fit: loose, length: regular, material: 棉麻, formality: 3, style_tags: [日系, 休闲]}
+      - {slot: lower, category: 工装裤, color: "#A89B7D", color_name: 卡其, family: earth, fit: loose, length: long, material: 棉, formality: 2, style_tags: [日系, 休闲]}
+      - {slot: shoes, category: 帆布鞋, color: "#E8E4DA", color_name: 米白, family: neutral, fit: regular, material: 帆布, formality: 2, style_tags: [日系]}
+
+  - item_id: lib-sport-01
+    title: 速干T + 运动短裤
+    occasion: sport
+    style_tags: [运动休闲, 机能风]
+    items:
+      - {slot: upper, category: 速干T, color: "#2F3A45", color_name: 深灰蓝, family: cool, fit: regular, length: regular, material: 聚酯纤维, formality: 1, style_tags: [运动休闲, 机能风], is_sport_derived: true}
+      - {slot: lower, category: 运动短裤, color: "#111827", color_name: 黑, family: neutral, fit: regular, length: regular, material: 聚酯纤维, formality: 1, style_tags: [运动休闲], is_sport_derived: true}
+      - {slot: shoes, category: 跑鞋, color: "#E5E7EB", color_name: 灰白, family: neutral, fit: regular, material: 织物, formality: 1, style_tags: [运动休闲], is_sport_derived: true}
+
+  - item_id: lib-formal-01
+    title: 黑西装 + 白衬衫 + 黑西裤
+    occasion: formal
+    style_tags: [正式, 商务正装]
+    items:
+      - {slot: outer, category: 西装外套, color: "#141414", color_name: 黑, family: neutral, fit: regular, length: regular, material: 羊毛, formality: 5, style_tags: [正式, 商务正装], is_structured: true}
+      - {slot: upper, category: 衬衫, color: "#FAFAFA", color_name: 白, family: neutral, fit: regular, length: regular, material: 棉, formality: 5, style_tags: [正式]}
+      - {slot: lower, category: 西裤, color: "#141414", color_name: 黑, family: neutral, fit: regular, length: long, material: 羊毛, formality: 5, style_tags: [正式]}
+      - {slot: shoes, category: 牛津鞋, color: "#0A0A0A", color_name: 黑, family: neutral, fit: regular, material: 皮革, formality: 5, style_tags: [正式]}
+
+  - item_id: lib-formal-02
+    title: 藏青连衣裙 + 米色风衣
+    occasion: formal
+    style_tags: [优雅, 经典]
+    items:
+      - {slot: dress, category: 连衣裙, color: "#243447", color_name: 藏青, family: cool, fit: regular, length: long, material: 混纺, formality: 5, style_tags: [优雅, 经典]}
+      - {slot: outer, category: 风衣, color: "#EFE8DA", color_name: 米色, family: neutral, fit: regular, length: long, material: 棉, formality: 4, style_tags: [优雅], is_structured: true}
+      - {slot: shoes, category: 单鞋, color: "#D8C4B0", color_name: 裸色, family: neutral, fit: regular, material: 皮革, formality: 4, style_tags: [优雅]}
+
+  - item_id: lib-party-01
+    title: 亮片上衣 + 黑皮裤
+    occasion: party
+    style_tags: [甜酷, 潮流]
+    items:
+      - {slot: upper, category: 亮片上衣, color: "#C0A78F", color_name: 香槟金, family: metal, fit: regular, length: regular, material: 亮片, formality: 3, style_tags: [甜酷, 潮流], metal: true}
+      - {slot: lower, category: 皮裤, color: "#101010", color_name: 黑, family: neutral, fit: slim, length: regular, material: 皮革, formality: 3, style_tags: [甜酷]}
+      - {slot: shoes, category: 高跟鞋, color: "#0E0E0E", color_name: 黑, family: neutral, fit: regular, material: 皮革, formality: 3, style_tags: [甜酷]}
+
+  - item_id: lib-commute-04
+    title: 格纹衬衫 + 直筒牛仔 + 棕靴
+    occasion: commute
+    style_tags: [美式复古, 休闲]
+    items:
+      - {slot: upper, category: 衬衫, color: "#8C6B4F", color_name: 棕格, family: earth, fit: regular, length: regular, material: 棉, formality: 3, style_tags: [美式复古], pattern: 格纹}
+      - {slot: lower, category: 牛仔裤, color: "#43536B", color_name: 中蓝, family: cool, fit: regular, length: long, material: 牛仔, formality: 2, style_tags: [美式复古, 休闲]}
+      - {slot: shoes, category: 工装靴, color: "#5A3E28", color_name: 深棕, family: earth, fit: regular, material: 皮革, formality: 3, style_tags: [美式复古]}
+      - {slot: accessory, category: 棒球帽, color: "#2B3A55", color_name: 藏青, family: cool, fit: regular, material: 棉, formality: 1, style_tags: [休闲]}

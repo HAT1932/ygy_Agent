@@ -33,7 +33,7 @@ class Settings(BaseModel):
     log_level: str = "INFO"
 
     # 规则集
-    ruleset_version: str = "rs-2026.10.1"
+    ruleset_version: str = "rs-2026.10.2"
     rules_dir: Path = ROOT / "rules"
 
     # VLM（阿里云百炼，OpenAI 兼容模式）
@@ -78,7 +78,7 @@ def get_settings() -> Settings:
     return Settings(
         app_env=os.getenv("APP_ENV", "dev"),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
-        ruleset_version=os.getenv("RULESET_VERSION", "rs-2026.10.1"),
+        ruleset_version=os.getenv("RULESET_VERSION", "rs-2026.10.2"),
         dashscope_api_key=os.getenv("DASHSCOPE_API_KEY") or None,
         dashscope_base_url=os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         vlm_model=os.getenv("VLM_MODEL", "qwen3.7-plus"),

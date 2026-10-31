@@ -20,8 +20,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
-CONTRACT_VERSION = "1.0.0"
-RULESET_VERSION = "rs-2026.10.1"
+CONTRACT_VERSION = "1.1.0"
+RULESET_VERSION = "rs-2026.10.2"
 
 # --------------------------------------------------------------------------
 # 基础枚举
@@ -230,7 +230,8 @@ class StyleTagScore(BaseModel):
 class StyleProfile(BaseModel):
     profile_id: str
     tags: list[StyleTagScore] = Field(default_factory=list)      # 已按权重降序
-    banned_styles: list[str] = Field(default_factory=list)
+    banned_styles: list[str] = Field(default_factory=list)       # 用户明确不穿的风格
+    explore_tags: list[str] = Field(default_factory=list)        # 用户想尝试的风格（F-08）
     preferred_formality: int | None = Field(default=None, ge=1, le=5)
     preference_vector: list[float] | None = None                  # 256 维
     n_ref_outfits: int = 0
@@ -466,6 +467,23 @@ class Anchor(BaseModel):
     thumb_url: str | None = None
 
 
+class RecallItem(BaseModel):
+    """双塔召回结果：用户塔向量 × 搭配库向量 的 top-K。
+
+    这是「双塔召回」在产品上的可见形态（验收标准第 4 条）：
+      · 用户塔 = 画像向量（由参考穿搭聚合）
+      · 搭配塔 = 候选搭配向量（来自独立搭配库，不是用户的输入）
+      · cosine(user, item) 排序取 top-K
+    """
+
+    item_id: str
+    title: str
+    similarity: float
+    style_tags: list[str] = Field(default_factory=list)
+    occasion: str | None = None
+    item_summary: str = ""      # "藏青针织衫 + 燕麦直筒裤 + 黑乐福鞋"
+
+
 class Suggestion(BaseModel):
     priority: int = 1
     target: str
@@ -506,6 +524,7 @@ class Report(BaseModel):
 
     style_match: StyleMatch = Field(default_factory=StyleMatch)
     anchors: list[Anchor] = Field(default_factory=list)
+    recall: list[RecallItem] = Field(default_factory=list)      # 双塔召回结果（验收标准第 4 条）
     suggestions: list[Suggestion] = Field(default_factory=list)
     summary: str = ""
     meta: ReportMeta = Field(default_factory=ReportMeta)
@@ -538,6 +557,10 @@ class Report(BaseModel):
 class CreateProfileRequest(BaseModel):
     image_refs: list[str] = Field(min_length=1, max_length=10)
     note: str | None = None
+    # 用户主观偏好（可选）：让「个人画像」不只是聚合统计，还能表达主观意愿。
+    # 不填也能跑；填了会激活 R-STYLE-001（hard 禁用风格）与 R-STYLE-009（探索加分）。
+    banned_styles: list[str] = Field(default_factory=list, max_length=20)
+    explore_tags: list[str] = Field(default_factory=list, max_length=20)
     persist: bool = True
 
 

@@ -161,7 +161,11 @@ def create_app(service: Any | None = None) -> FastAPI:
     @app.post("/v1/profiles", response_model=CreateProfileResponse, tags=["profile"],
               summary="上传参考穿搭标识 → 建立风格画像")
     def create_profile(req: CreateProfileRequest) -> CreateProfileResponse:
-        profile, outfits = _service(app).create_profile(req.image_refs, req.note)
+        profile, outfits = _service(app).create_profile(
+            req.image_refs, req.note,
+            banned_styles=req.banned_styles,
+            explore_tags=req.explore_tags,
+        )
         warnings: list[str] = []
         for o in outfits:
             warnings.extend(o.parse_warnings or [])

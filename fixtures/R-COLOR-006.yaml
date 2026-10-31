@@ -11,8 +11,8 @@ cases:
       category: 衬衫
       material: 棉
       colors:
-      - hex: '#F2F2F2'
-        name: 米白
+      - hex: '#FFE699'
+        name: 浅黄油
       style_tags: []
       attrs:
         formality: 0.5
@@ -21,7 +21,7 @@ cases:
       category: 长裤
       material: 羊毛
       colors:
-      - hex: '#111111'
+      - hex: '#1A1A1A'
         name: 黑色
       style_tags: []
       attrs:

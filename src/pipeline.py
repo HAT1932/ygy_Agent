@@ -157,6 +157,7 @@ class DemoService:
         self._encoder = None
         self._store = None
         self._parser = None
+        self._library = None
 
         if persist:
             DATA_DIR.mkdir(exist_ok=True)
@@ -199,6 +200,15 @@ class DemoService:
             self._parser = get_parser()
         return self._parser
 
+    @property
+    def library(self):
+        """搭配库索引（双塔召回的候选池）。懒加载：只在首次生成 report 时编码。"""
+        if self._library is None:
+            from .towers.library import LibraryIndex, load_library
+            items = load_library()
+            self._library = LibraryIndex(items, self.encoder)
+        return self._library
+
     # ---------- 持久化（可选，演示用）----------
 
     def _load(self) -> None:
@@ -238,7 +248,9 @@ class DemoService:
         self._outfits[outfit.outfit_id] = outfit
         return outfit, list(result.warnings)
 
-    def create_profile(self, image_refs: list[str], note: str | None = None
+    def create_profile(self, image_refs: list[str], note: str | None = None,
+                       banned_styles: list[str] | None = None,
+                       explore_tags: list[str] | None = None
                        ) -> tuple[StyleProfile, list[Outfit]]:
         from .profiling import build_profile
 
@@ -250,8 +262,20 @@ class DemoService:
             outfits.append(outfit)
             warnings.extend(w)
 
-        profile_id = make_id("prf", sorted(image_refs), self.settings.ruleset_version)
+        banned = [s.strip() for s in (banned_styles or []) if s and s.strip()]
+        explore = [s.strip() for s in (explore_tags or []) if s and s.strip()]
+
+        profile_id = make_id("prf", sorted(image_refs), sorted(banned), sorted(explore),
+                             self.settings.ruleset_version)
         profile = build_profile(outfits, profile_id=profile_id)
+        # 用户主观偏好覆盖聚合结果（主观意愿优先于统计推断）—— 这是 F-08 的关键一环：
+        # 有了 banned_styles，唯一那条 hard 风格规则（R-STYLE-001）才可能生效，
+        # 一次 veto 就能产生 20+ 分的画像差异。
+        if banned or explore:
+            profile = profile.model_copy(update={
+                "banned_styles": banned,
+                "explore_tags": explore,
+            })
         self._profiles[profile.profile_id] = profile
 
         # 参考搭配进入向量库，供 reports 的 anchors 召回
@@ -315,6 +339,11 @@ class DemoService:
                    for oid, sim in self.store.search(list(ov), k=5)
                    if sim >= min_sim][:3]
 
+        # 双塔召回（验收标准第 4 条）：用户塔向量 × 搭配库向量 → top-K
+        # 这是真召回：候选来自独立搭配库，不是用户自己的输入。
+        pv = self.encoder.encode_profile(profile)
+        recall_items = self.library.to_recall_items(self.library.recall(pv, k=5))
+
         # ⑨ 合成（模板优先；LLM 仅在可用时润色）
         from .synthesis import synthesize
         ctx = {
@@ -353,6 +382,7 @@ class DemoService:
             score_ledger=result.ledger,
             style_match=style_match,
             anchors=anchors,
+            recall=recall_items,
             suggestions=suggestions,
             summary=summary,
             meta=ReportMeta(
@@ -383,9 +413,13 @@ class DemoService:
             count = len(self.rules)
         except Exception:
             count = 0
+        try:
+            lib_count = len(self.library)
+        except Exception:
+            lib_count = 0
         return {"status": "ok", "offline_mode": self.settings.offline_mode,
                 "ruleset_version": self.settings.ruleset_version,
-                "rule_count": count, "providers": providers,
+                "rule_count": count, "library_count": lib_count, "providers": providers,
                 "profiles": len(self._profiles), "reports": len(self._reports)}
 
 

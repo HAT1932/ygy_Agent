@@ -12,6 +12,8 @@ condition:
   - field: outfit.style_tag_jaccard_min
     op: lt
     value: 0.2
+  # F-09 豁免：高正式度（正装/礼服）是制服式组合，同源由品类保证，jaccard 会系统性误判
+  - {field: outfit.formality, op: lt, value: 0.85}
 effect: penalty
 score_impact:
   dimension: D2
@@ -21,6 +23,7 @@ evidence_fields:
 - outfit.garment_count
 - outfit.style_tag_jaccard_min
 - ctx.top_style_cn
+- outfit.formality
 source: domain_expert
 status: active
 suppresses: []
