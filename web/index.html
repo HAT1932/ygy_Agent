@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 穿搭顾问 · Demo</title>
+<!--
+  单文件前端：零 CDN、零构建、零外部字体。
+  同源部署（python run.py 后访问 http://127.0.0.1:8000/）时 API 走相对路径；
+  直接用 file:// 打开时自动回落到 http://127.0.0.1:8000。
+  所有请求失败都在页内以文字提示，不弹窗。
+-->
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#1f2320; --muted:#6f7671; --line:#e6e4de;
+    --accent:#2f6b5a; --accent-soft:#e8f1ed; --warn:#a85b2b; --danger:#a33a3a;
+    --gold:#8a6d2f; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:40px 22px 72px}
+  header.page{margin-bottom:30px}
+  h1{font-size:26px;letter-spacing:.5px;margin:0 0 6px;font-weight:650}
+  .sub{color:var(--muted);font-size:14px}
+  .health-pill{display:inline-flex;align-items:center;gap:7px;margin-top:14px;
+    background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:5px 14px;font-size:13px;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#c9cdc9;display:inline-block}
+  .dot.ok{background:#3f8f6f}.dot.bad{background:var(--danger)}
+  section.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 28px;margin-bottom:22px}
+  h2{font-size:17px;margin:0 0 4px;letter-spacing:.3px;font-weight:640}
+  .hint{color:var(--muted);font-size:13px;margin:0 0 16px}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+  textarea,input,select{
+    width:100%;border:1px solid var(--line);border-radius:10px;background:#fbfbf9;
+    padding:10px 12px;font:inherit;color:var(--ink);outline:none;
+  }
+  textarea{min-height:86px;resize:vertical;font-size:14px;line-height:1.7}
+  input,select{height:40px}
+  textarea:focus,input:focus,select:focus{border-color:#9db8ae;background:#fff;
+    box-shadow:0 0 0 3px rgba(47,107,90,.08)}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row > .col{flex:1 1 200px;min-width:170px}
+  button{
+    appearance:none;border:1px solid var(--accent);background:var(--accent);color:#fff;
+    border-radius:10px;padding:10px 20px;font:inherit;font-weight:600;cursor:pointer;
+    transition:opacity .15s ease;margin-top:16px;
+  }
+  button.ghost{background:#fff;color:var(--accent)}
+  button:disabled{opacity:.5;cursor:default}
+  .notice{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:13.5px;display:none}
+  .notice.err{display:block;background:#fbf0ee;color:var(--danger);border:1px solid #eed7d2}
+  .notice.info{display:block;background:var(--accent-soft);color:var(--accent);border:1px solid #d5e6de}
+  .hidden{display:none !important}
+
+  /* ---- 画像结果 ---- */
+  .kv{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-top:18px}
+  code.id{background:#f2f1ed;border:1px solid var(--line);border-radius:7px;padding:3px 9px;
+    font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:var(--accent-soft);color:var(--accent);border-radius:999px;
+    padding:4px 12px;font-size:13px;font-weight:600}
+  .chip small{font-weight:400;opacity:.75;margin-left:5px}
+  .evidence{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+  .evidence-row{display:flex;gap:10px;font-size:13px;padding:4px 0;color:var(--muted)}
+  .evidence-row b{color:var(--ink);font-weight:600;min-width:96px}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+
+  /* ---- 评审结果 ---- */
+  .score-head{display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .score-big{font-size:64px;line-height:1;font-weight:700;letter-spacing:-2px;
+    font-variant-numeric:tabular-nums}
+  .score-big .unit{font-size:18px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
+  .verdict{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700}
+  .v-strong{background:#e5f2ea;color:#25624d}
+  .v-suit{background:var(--accent-soft);color:var(--accent)}
+  .v-neutral{background:#f6f0e2;color:var(--gold)}
+  .v-unsuit{background:#fbf0ee;color:var(--danger)}
+  .badge{font-size:12px;border:1px solid var(--line);border-radius:7px;padding:3px 9px;
+    color:var(--muted);background:#fbfbf9}
+
+  .bars{margin-top:22px}
+  .bar-row{display:grid;grid-template-columns:96px 1fr 84px;gap:14px;align-items:center;
+    padding:8px 0}
+  .bar-name{font-size:13.5px}
+  .bar-track{height:10px;background:#eceae5;border-radius:6px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#4d8a75,#2f6b5a)}
+  .bar-fill.gated{background:repeating-linear-gradient(45deg,#c9cdc9,#c9cdc9 5px,#e3e4e0 5px,#e3e4e0 10px)}
+  .bar-num{font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .bar-num b{color:var(--ink)}
+
+  .top-suggestion{margin-top:24px;border:1px solid #d9e7df;background:#f4f9f6;
+    border-radius:12px;padding:18px 20px}
+  .top-suggestion .tag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px}
+  .top-suggestion .action{font-size:16px;font-weight:600;margin:6px 0 8px}
+  .gain{display:inline-block;background:#fff;border:1px solid #d9e7df;color:var(--accent);
+    border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:700}
+
+  details{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+  details summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);
+    list-style:none;padding:4px 0;display:flex;align-items:center;gap:8px}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"▸";color:var(--muted);font-size:12px;transition:transform .15s}
+  details[open] summary::before{transform:rotate(90deg)}
+  details .body{padding:8px 0 4px 18px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.4px;
+    border-bottom:1px solid var(--line);padding:8px 10px 8px 0}
+  td{border-bottom:1px solid #f1efe9;padding:10px 10px 10px 0;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .delta-neg{color:var(--danger);font-weight:700;font-variant-numeric:tabular-nums}
+  .delta-pos{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+  .clip{font-size:11px;color:var(--warn);border:1px solid #ecd9c9;border-radius:5px;
+    padding:0 5px;margin-left:5px;white-space:nowrap}
+  .rule-id{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+  .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px 20px;
+    font-size:13px;color:var(--muted)}
+  .meta-grid b{color:var(--ink);font-weight:600}
+
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <h1>AI 穿搭顾问</h1>
+    <div class="sub">确定性规则引擎打分 · 每一分扣减都可追溯到规则 · 离线可运行</div>
+    <div class="health-pill"><span class="dot" id="hdot"></span><span id="hpill">正在检查服务…</span></div>
+  </header>
+
+  <!-- ======================= 1. 建画像 ======================= -->
+  <section class="card" id="sec-profile">
+    <h2>1 · 建立风格画像</h2>
+    <p class="hint">输入 1–10 个参考穿搭标识（演示环境用标识即可，例如 <code>demo/commute-1</code>），每行一个。</p>
+    <label for="profileRefs">参考穿搭标识</label>
+    <textarea id="profileRefs" spellcheck="false">demo/commute-1
+demo/commute-2
+demo/minimal-1</textarea>
+    <div class="row">
+      <div class="col">
+        <label for="profileNote">备注（可选）</label>
+        <input id="profileNote" placeholder="例如：上班常穿">
+      </div>
+    </div>
+    <button id="btnProfile" type="button">建立画像</button>
+    <div class="notice" id="profileNotice"></div>
+    <div id="profileResult" class="hidden"></div>
+  </section>
+
+  <!-- ======================= 2. 评审 ======================= -->
+  <section class="card" id="sec-review">
+    <h2>2 · 评审一套搭配</h2>
+    <p class="hint">用上一步得到的画像，给一套待评审搭配打分。场合必选，否则 D4 无法判断。</p>
+    <div class="row">
+      <div class="col" style="flex:2 1 320px">
+        <label for="reviewProfileId">画像 ID</label>
+        <input id="reviewProfileId" placeholder="prf_…（建立画像后自动填入）">
+      </div>
+      <div class="col">
+        <label for="reviewOccasion">场合</label>
+        <select id="reviewOccasion">
+          <option value="business">通勤 / 商务</option>
+          <option value="date">约会</option>
+          <option value="casual">休闲</option>
+          <option value="formal">正式</option>
+          <option value="sport">运动</option>
+          <option value="party">聚会</option>
+          <option value="travel">旅行</option>
+          <option value="home">居家</option>
+          <option value="unspecified">未指定</option>
+        </select>
+      </div>
+      <div class="col">
+        <label for="reviewSeason">季节</label>
+        <select id="reviewSeason">
+          <option value="">未知</option>
+          <option value="spring">春</option>
+          <option value="summer">夏</option>
+          <option value="autumn">秋</option>
+          <option value="winter">冬</option>
+        </select>
+      </div>
+    </div>
+    <label for="reviewRefs">待评审搭配标识（1–5 行，多行视为同一套的不同角度）</label>
+    <textarea id="reviewRefs" spellcheck="false">demo/commute-1</textarea>
+    <button id="btnReview" type="button">生成评审</button>
+    <div class="notice" id="reviewNotice"></div>
+    <div id="reviewResult" class="hidden"></div>
+  </section>
+
+  <!-- ======================= 3. 健康检查 ======================= -->
+  <section class="card" id="sec-health">
+    <h2>3 · 服务状态</h2>
+    <p class="hint">演示前先确认离线模式与规则集已加载。</p>
+    <div class="meta-grid" id="healthGrid"><span class="muted">加载中…</span></div>
+    <button id="btnHealth" type="button" class="ghost">刷新状态</button>
+  </section>
+
+  <footer id="footer">API 基址：<span id="apiBase"></span></footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 基础设施 ----------
+  var API_BASE = (location.protocol === "file:") ? "http://127.0.0.1:8000" : "";
+  document.getElementById("apiBase").textContent = API_BASE || location.origin;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function lines(text) {
+    return String(text || "").split("\n").map(function (s) { return s.trim(); })
+      .filter(Boolean);
+  }
+  function notice(el, kind, msg) {
+    el.className = "notice " + kind;
+    el.textContent = msg;
+  }
+  function clearNotice(el) { el.className = "notice"; el.textContent = ""; }
+
+  async function api(path, options) {
+    var res;
+    try {
+      res = await fetch(API_BASE + path, options);
+    } catch (e) {
+      var net = new Error("无法连接服务（" + (API_BASE || location.origin) + "）。请确认已运行 python run.py。");
+      net.status = 0;
+      throw net;
+    }
+    var text = await res.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = { message: text }; }
+    if (!res.ok) {
+      var err = new Error((data && data.message) || ("请求失败（HTTP " + res.status + "）"));
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function setBusy(btn, busy, label) {
+    btn.disabled = busy;
+    if (busy) { btn.dataset.label = btn.textContent; btn.textContent = label || "处理中…"; }
+    else if (btn.dataset.label) { btn.textContent = btn.dataset.label; }
+  }
+
+  var VERDICT = {
+    strongly_recommended: { label: "强烈推荐", cls: "v-strong" },
+    suitable: { label: "适合", cls: "v-suit" },
+    neutral: { label: "一般", cls: "v-neutral" },
+    unsuitable: { label: "不适合", cls: "v-unsuit" }
+  };
+  function verdictOf(v) { return VERDICT[v] || { label: v || "—", cls: "v-neutral" }; }
+  function fmt(n, d) {
+    var x = Number(n);
+    return isFinite(x) ? x.toFixed(d == null ? 1 : d) : "—";
+  }
+
+  // ---------- 健康检查 ----------
+  async function loadHealth() {
+    var dot = $("hdot"), pill = $("hpill"), grid = $("healthGrid");
+    try {
+      var h = await api("/v1/health");
+      dot.className = "dot ok";
+      pill.textContent = "服务正常 · " + (h.offline_mode ? "离线模式" : "在线模型") +
+        " · " + h.rule_count + " 条规则";
+      grid.innerHTML = [
+        row("状态", h.status === "ok" ? "正常" : String(h.status)),
+        row("离线模式", h.offline_mode ? "是（不调用外部模型）" : "否（阿里云百炼）"),
+        row("规则数", h.rule_count + " 条"),
+        row("规则集版本", h.ruleset_version),
+        row("契约版本", h.contract_version),
+        row("解析模型", (h.providers || {}).vlm || "—"),
+        row("文案模型", (h.providers || {}).llm || "—"),
+        row("向量模型", (h.providers || {}).embedding || "—")
+      ].join("");
+    } catch (e) {
+      dot.className = "dot bad";
+      pill.textContent = "服务不可用";
+      grid.innerHTML = '<span style="color:#a33a3a">' + esc(e.message) + "</span>";
+    }
+  }
+  function row(k, v) {
+    return "<span><b>" + esc(k) + "</b>　" + esc(v) + "</span>";
+  }
+
+  // ---------- 建画像 ----------
+  async function buildProfile() {
+    var btn = $("btnProfile"), note = $("profileNotice"), out = $("profileResult");
+    var refs = lines($("profileRefs").value);
+    clearNotice(note);
+    if (!refs.length) { notice(note, "err", "请至少输入一个参考穿搭标识。"); return; }
+    if (refs.length > 10) { notice(note, "err", "参考穿搭最多 10 个，当前 " + refs.length + " 个。"); return; }
+    setBusy(btn, true);
+    try {
+      var data = await api("/v1/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_refs: refs, note: $("profileNote").value || null })
+      });
+      $("reviewProfileId").value = data.profile_id;
+      renderProfile(data);
+      notice(note, "info", "画像已建立，并已自动填入下方「画像 ID」。");
+    } catch (e) {
+      notice(note, "err", e.message);
+      out.classList.add("hidden");
+    } finally {
+      setBusy(btn, false);
+    }
+  }
+
+  function renderProfile(data) {
+    var p = data.profile || {};
+    var tags = (p.tags || []).map(function (t) {
+      return '<span class="chip">' + esc(t.tag) + "<small>" + fmt(t.weight * 100, 0) + "%</small></span>";
+    }).join("");
+    var evidence = p.tag_evidence || {};
+    var evKeys = Object.keys(evidence);
+    var evRows = evKeys.length ? evKeys.map(function (k) {
+      var ids = evidence[k] || [];
+      return '<div class="evidence-row"><b>' + esc(k) + "</b><span>" +
+        esc(ids.join("、")) + "</span></div>";
+    }).join("") : '<div class="evidence-row muted">暂无标签证据</div>';
+
+    var warnings = (data.warnings || []).concat(p.source_outfit_ids ? [] : []);
+    var warnHtml = warnings.length
+      ? '<div class="evidence-row" style="color:#a85b2b"><b>解析告警</b><span>' + esc(warnings.join("；")) + "</span></div>"
+      : "";
+
+    var outfitRows = (data.outfits || []).slice(0, 10).map(function (o) {
+      var styles = [];
+      (o.items || []).forEach(function (g) {
+        (g.style_tags || []).forEach(function (t) { if (styles.indexOf(t) < 0) styles.push(t); });
+      });
+      return '<div class="evidence-row"><b>' + esc(o.outfit_id) + "</b><span>" +
+        esc((o.items || []).length + " 件单品") +
+        (styles.length ? " · " + esc(styles.join(" / ")) : "") + "</span></div>";
+    }).join("");
+
+    $("profileResult").classList.remove("hidden");
+    $("profileResult").innerHTML =
+      '<div class="kv">画像 ID <code class="id">' + esc(data.profile_id) + "</code>" +
+      '<span class="badge">置信度 ' + fmt((p.confidence || 0) * 100, 0) + "%</span>" +
+      '<span class="badge">参考 ' + esc(p.n_ref_outfits || 0) + " 套</span></div>" +
+      '<div class="chips" style="margin-top:14px">' + (tags || '<span class="muted small">暂无风格标签</span>') + "</div>" +
+      '<div class="evidence"><div class="small muted" style="margin-bottom:6px">标签证据（可回溯到具体参考穿搭）</div>' +
+      evRows + warnHtml + "</div>" +
+      '<details><summary>参考穿搭明细（' + (data.outfits || []).length + " 套）</summary>" +
+      '<div class="body">' + (outfitRows || '<span class="muted small">无</span>') + "</div></details>";
+  }
+
+  // ---------- 评审 ----------
+  async function runReview() {
+    var btn = $("btnReview"), note = $("reviewNotice"), out = $("reviewResult");
+    var profileId = $("reviewProfileId").value.trim();
+    var refs = lines($("reviewRefs").value);
+    clearNotice(note);
+    if (!profileId) { notice(note, "err", "请先建立画像，或填入已有的画像 ID。"); return; }
+    if (!refs.length) { notice(note, "err", "请至少输入一个待评审搭配标识。"); return; }
+    if (refs.length > 5) { notice(note, "err", "单套搭配最多 5 个标识。"); return; }
+    setBusy(btn, true);
+    try {
+      var data = await api("/v1/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile_id: profileId,
+          image_refs: refs,
+          occasion: $("reviewOccasion").value,
+          season: $("reviewSeason").value || null
+        })
+      });
+      renderReport(data);
+    } catch (e) {
+      notice(note, "err", e.status === 404 ? "画像不存在，请先在上方建立画像。" : e.message);
+      out.classList.add("hidden");
+    } finally {
+      setBusy(btn, false);
+    }
+  }
+
+  function renderReport(r) {
+    var out = $("reviewResult");
+    out.classList.remove("hidden");
+    var v = verdictOf(r.verdict);
+    var dims = r.dimension_scores || [];
+    var bars = dims.map(function (d) {
+      var pct = d.max > 0 ? Math.max(0, Math.min(100, (d.score / d.max) * 100)) : 0;
+      var detail = "基准 " + fmt(d.base) + " · 扣 " + fmt(d.penalty_used) +
+        " · 加 " + fmt(d.boost_used) + (d.gated ? " · 证据不足已门控" : "");
+      return '<div class="bar-row" title="' + esc(detail) + '">' +
+        '<div class="bar-name">' + esc(d.name || d.code) + "</div>" +
+        '<div class="bar-track"><div class="bar-fill' + (d.gated ? " gated" : "") +
+        '" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+        '<div class="bar-num"><b>' + fmt(d.score) + "</b> / " + fmt(d.max, 0) + "</div></div>";
+    }).join("");
+
+    var top = (r.suggestions || [])[0];
+    var topHtml = top
+      ? '<div class="top-suggestion"><div class="tag">最高优先级建议</div>' +
+        '<div class="action">' + esc(top.action) + "</div>" +
+        '<span class="gain">预计提升 +' + fmt(top.expected_gain) + " 分</span>" +
+        (top.target ? ' <span class="badge">对象：' + esc(top.target) + "</span>" : "") +
+        ((top.reason_rule_ids || []).length
+          ? '<div class="small muted" style="margin-top:8px">依据：' +
+            esc(top.reason_rule_ids.join("、")) + "</div>" : "") + "</div>"
+      : '<div class="top-suggestion"><div class="tag">最高优先级建议</div>' +
+        '<div class="action">当前没有必须修改的动作，保持这个方向。</div></div>';
+
+    var hits = (r.rule_hits || []).slice().sort(function (a, b) {
+      return Math.abs(b.delta_applied) - Math.abs(a.delta_applied);
+    });
+    var hitRows = hits.length ? hits.map(function (h, i) {
+      var neg = Number(h.delta_applied) < 0;
+      var deltaCls = neg ? "delta-neg" : "delta-pos";
+      var sign = Number(h.delta_applied) > 0 ? "+" : "";
+      var advice = h.suggestion || h.reinforce || "";
+      return "<tr><td>" + (i + 1) + '</td><td><div class="rule-id">' + esc(h.rule_id) +
+        "</div><b>" + esc(h.title) + "</b></td>" +
+        "<td>" + esc(h.dimension) + '</td><td class="' + deltaCls + '">' + sign +
+        fmt(h.delta_applied) + (h.clipped ? '<span class="clip">已截断</span>' : "") + "</td>" +
+        "<td>" + esc(h.evidence || "") +
+        (h.explanation ? '<div class="small muted">' + esc(h.explanation) + "</div>" : "") +
+        (advice ? '<div class="small" style="color:#2f6b5a">→ ' + esc(advice) + "</div>" : "") +
+        "</td></tr>";
+    }).join("") : '<tr><td colspan="5" class="muted">没有规则命中（该搭配在可用证据范围内没有触发扣分或加分项）。</td></tr>';
+
+    var sm = r.style_match || {};
+    var smMatched = (sm.matched || []).map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("") ||
+      '<span class="muted small">无共同风格</span>';
+    var smDrift = (sm.drifted || []).map(function (t) { return '<span class="chip" style="background:#f6f0e2;color:#8a6d2f">' + esc(t) + "</span>"; }).join("");
+
+    var anchors = (r.anchors || []).map(function (a) {
+      return '<div class="evidence-row"><b>' + esc(a.outfit_id) + "</b><span>相似度 " + fmt(a.similarity, 3) + "</span></div>";
+    }).join("") || '<div class="evidence-row muted">没有足够相似的参考搭配（相似度低于 0.60 不作为锚点）。</div>';
+
+    var m = r.meta || {};
+    var warnings = (m.parse_warnings || []).map(esc).join("；") || "无";
+    var latency = m.latency_ms || {};
+    var latStr = Object.keys(latency).map(function (k) { return k + " " + latency[k] + "ms"; }).join(" · ") || "—";
+
+    out.innerHTML =
+      '<div class="score-head">' +
+        '<div class="score-big">' + fmt(r.total_score) + '<span class="unit">/ 100</span></div>' +
+        '<div><span class="verdict ' + v.cls + '">' + esc(v.label) + "</span>" +
+        (r.vetoed ? ' <span class="badge" style="color:#a33a3a;border-color:#eed7d2">已触发否决规则</span>' : "") +
+        '<div class="small muted" style="margin-top:8px">基准分 ' + fmt(r.base_score) +
+        " · 置信度 " + fmt((r.confidence || 0) * 100, 0) + "% · 总分厘点 " +
+        esc(r.total_centi) + "</div></div></div>" +
+      '<div class="muted small" style="margin-top:6px">' + esc(r.summary || "") + "</div>" +
+      '<div class="bars">' + bars + "</div>" + topHtml +
+      '<details open><summary>全部规则命中（' + hits.length + " 条）</summary><div class=\"body\">" +
+        '<table><thead><tr><th style="width:26px">#</th><th>规则</th><th style="width:44px">维度</th>' +
+        '<th style="width:76px">生效影响</th><th>证据与说明</th></tr></thead><tbody>' + hitRows + "</tbody></table>" +
+      "</div></details>" +
+      '<details><summary>风格匹配</summary><div class="body">' +
+        '<div class="small muted">你的主风格：' + esc((sm.user_top_styles || []).join(" / ") || "—") + "</div>" +
+        '<div class="small muted">搭配风格：' + esc((sm.outfit_styles || []).join(" / ") || "—") + "</div>" +
+        '<div class="chips" style="margin-top:6px">' + smMatched + smDrift + "</div>" +
+        '<div class="small muted" style="margin-top:6px">向量余弦 ' + fmt(sm.cosine, 3) + "</div>" +
+      "</div></details>" +
+      '<details><summary>相似参考搭配（锚点）</summary><div class="body">' + anchors + "</div></details>" +
+      '<details><summary>报告元信息</summary><div class="body"><div class="meta-grid">' +
+        row("报告 ID", r.report_id) + row("搭配 ID", r.outfit_id) + row("画像 ID", r.profile_id) +
+        row("解析模型", m.vlm_model) + row("文案模型", m.llm_model) +
+        row("向量模型", m.embedding_model) + row("规则集版本", m.ruleset_version) +
+        row("契约版本", m.contract_version) + row("渲染模式", m.render_mode) +
+        row("解析告警", warnings) + row("耗时", latStr) +
+      "</div></div></details>";
+    $("reviewNotice").className = "notice";
+  }
+
+  // ---------- 事件绑定 ----------
+  $("btnProfile").addEventListener("click", buildProfile);
+  $("btnReview").addEventListener("click", runReview);
+  $("btnHealth").addEventListener("click", loadHealth);
+  loadHealth();
+})();
+</script>
+</body>
+</html>
