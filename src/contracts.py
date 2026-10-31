@@ -607,6 +607,7 @@ class HealthResponse(BaseModel):
     ruleset_version: str = RULESET_VERSION
     offline_mode: bool = True
     rule_count: int = 0
+    library_count: int = 0        # 双塔召回的候选池大小
     providers: dict[str, str] = Field(default_factory=dict)
 
 
