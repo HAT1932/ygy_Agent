@@ -1,0 +1,43 @@
+rule_id: R-COLOR-003
+version: 1
+category: COLOR
+title: 冷暖调性冲突
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.colors.temperature_mix
+    op: eq
+    value: conflicting
+  - field: outfit.colors.warm_area_ratio
+    op: gt
+    value: 0.25
+  - field: outfit.colors.cool_area_ratio
+    op: gt
+    value: 0.25
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -3.0
+explain_template: 暖色 {outfit.colors.warm_area_ratio|pct}、冷色 {outfit.colors.cool_area_ratio|pct}，面积相当又缺中性色过渡。
+evidence_fields:
+- outfit.colors.temperature_mix
+- outfit.colors.warm_area_ratio
+- outfit.colors.cool_area_ratio
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-003
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-003
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-003
+    expect: miss
+suggestion_template: 加一件米白或浅灰的内搭或薄外套作为过渡层，把整身色调统一到偏暖或偏冷的一侧。

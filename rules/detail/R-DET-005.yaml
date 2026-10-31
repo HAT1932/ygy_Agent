@@ -1,0 +1,41 @@
+rule_id: R-DET-005
+version: 1
+category: DETAIL
+title: 鞋履量感失衡
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: garment.shoes.fit
+    op: eq
+    value: oversized
+  - field: garment.top.material_family
+    op: in
+    value:
+    - silk
+    - linen
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -2.0
+explain_template: 轻薄材质的上装配了厚重的鞋型，上下量感断裂。
+evidence_fields:
+- garment.shoes.fit
+- garment.top.material_family
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-005
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-005
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-005
+    expect: miss
+suggestion_template: 把鞋换成低帮或尖头的轻量款，或把上装换成有结构感的羊毛、牛仔材质。

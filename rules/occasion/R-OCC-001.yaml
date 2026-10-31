@@ -1,0 +1,42 @@
+rule_id: R-OCC-001
+version: 1
+category: OCCASION
+title: 运动装进正式场合
+severity: hard
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: in
+    value:
+    - formal
+    - business
+  - field: outfit.sport.max_area_ratio
+    op: gt
+    value: 0.15
+effect: veto
+score_impact:
+  dimension: D4
+  delta: -6.8
+explain_template: 这套搭配在{ctx.occasion_cn}场合出现运动属性单品，面积占比 {outfit.sport.max_area_ratio|pct}。
+evidence_fields:
+- outfit.occasion
+- outfit.sport.max_area_ratio
+- ctx.occasion_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 10
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-001
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-001
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-001
+    expect: miss
+suggestion_template: 把运动属性单品换成同色系的正装替代款，比如运动裤换西裤、卫衣换针织衫。

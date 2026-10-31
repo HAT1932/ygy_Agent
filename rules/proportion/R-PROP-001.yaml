@@ -1,0 +1,48 @@
+rule_id: R-PROP-001
+version: 1
+category: PROPORTION
+title: 上长下长压身高
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: garment.top.length
+    op: in
+    value:
+    - regular
+    - long
+  - field: garment.bottom.length
+    op: eq
+    value: long
+  - field: outfit.structure.is_tucked
+    op: is_false
+  - field: garment.top.length_ratio
+    op: gt
+    value: 0.55
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -4.0
+explain_template: 上装下摆长度比达 {garment.top.length_ratio} 且没有塞入，与长下装叠加压低腰线。
+evidence_fields:
+- garment.top.length
+- garment.bottom.length
+- outfit.structure.is_tucked
+- garment.top.length_ratio
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-001
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-001
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-001
+    expect: miss
+suggestion_template: 把上装塞入下装，或换成下摆落在腰线附近的短款，把腰线露出来。

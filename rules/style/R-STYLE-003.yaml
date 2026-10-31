@@ -1,0 +1,40 @@
+rule_id: R-STYLE-003
+version: 1
+category: STYLE
+title: 单品风格不同源
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.garment_count
+    op: gte
+    value: 3
+  - field: outfit.style_tag_jaccard_min
+    op: lt
+    value: 0.2
+effect: penalty
+score_impact:
+  dimension: D2
+  delta: -4.0
+explain_template: '{outfit.garment_count} 件单品的风格同源度最低只有 {outfit.style_tag_jaccard_min}，不在一个基调上。'
+evidence_fields:
+- outfit.garment_count
+- outfit.style_tag_jaccard_min
+- ctx.top_style_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-003
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-003
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-003
+    expect: miss
+suggestion_template: 先定一个主基调 {ctx.top_style_cn}，把偏离基调的单品换成同风格款。

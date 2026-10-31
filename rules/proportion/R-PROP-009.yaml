@@ -1,0 +1,39 @@
+rule_id: R-PROP-009
+version: 1
+category: PROPORTION
+title: 上短下长
+severity: boost
+scope: outfit
+condition:
+  all:
+  - field: outfit.structure.is_tucked
+    op: is_true
+  - field: garment.bottom.waist
+    op: eq
+    value: high
+  - field: outfit.structure.visual_waist_y
+    op: lte
+    value: 0.42
+effect: bonus
+score_impact:
+  dimension: D3
+  delta: 4.0
+explain_template: 上装塞入高腰下装，腰线提到 {outfit.structure.visual_waist_y}，形成上短下长的比例。
+evidence_fields:
+- outfit.structure.is_tucked
+- garment.bottom.waist
+- outfit.structure.visual_waist_y
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-009
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-009
+    expect: miss
+reinforce_template: 这个比例可以保留：换下装时继续选高腰款，上装保持塞入或短款即可。

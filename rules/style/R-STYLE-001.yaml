@@ -1,0 +1,36 @@
+rule_id: R-STYLE-001
+version: 1
+category: STYLE
+title: 命中禁用风格
+severity: hard
+scope: outfit
+condition:
+  field: outfit.style.forbidden_overlap_count
+  op: gte
+  value: 1
+effect: veto
+score_impact:
+  dimension: D2
+  delta: -9.0
+explain_template: 这套搭配出现了你明确排除的风格（{outfit.style.forbidden_tags|list}），与你的偏好方向相反。
+evidence_fields:
+- outfit.style.forbidden_overlap_count
+- outfit.style.forbidden_tags
+- ctx.top_style_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 10
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-001
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-001
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-001
+    expect: miss
+suggestion_template: 把命中排除风格的单品换成你常穿的 {ctx.top_style_cn} 风格同类替代款。

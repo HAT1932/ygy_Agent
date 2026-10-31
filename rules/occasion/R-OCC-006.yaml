@@ -1,0 +1,39 @@
+rule_id: R-OCC-006
+version: 1
+category: OCCASION
+title: 约会场合功能性单品
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: eq
+    value: date
+  - field: outfit.sport.count
+    op: gte
+    value: 1
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -3.0
+explain_template: 约会场合出现了运动或功能性单品，整体质感与场合不搭。
+evidence_fields:
+- outfit.occasion
+- outfit.sport.count
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-006
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-006
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-006
+    expect: miss
+suggestion_template: 把鞋换成皮质单鞋，或把上装换成丝质、棉质的款式。

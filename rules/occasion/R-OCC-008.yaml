@@ -1,0 +1,43 @@
+rule_id: R-OCC-008
+version: 1
+category: OCCASION
+title: 运动场合配正装鞋
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: eq
+    value: sport
+  - field: garment.shoes.material_family
+    op: eq
+    value: leather
+  - field: garment.shoes.formality
+    op: gt
+    value: 0.55
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -3.0
+explain_template: 运动场合穿了皮质的正装皮鞋，功能和场合都对不上。
+evidence_fields:
+- outfit.occasion
+- garment.shoes.material_family
+- garment.shoes.formality
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-008
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-008
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-008
+    expect: miss
+suggestion_template: 把鞋换成跑鞋或训练鞋，颜色与整身保持同色系。

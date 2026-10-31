@@ -51,6 +51,10 @@ class Settings(BaseModel):
     embedding_mode: str = "hash"     # hash | dashscope
     embedding_dim: int = 256
 
+    # 锚点召回相似度下限。契约默认 0.60（语义 embedding）；hash 模式余弦区间被压缩，
+    # 实测分布约 0.10–0.40，因此该参数必须按 embedding 后端标定，不能写死。
+    anchor_min_sim: float = 0.60
+
     offline_mode: bool = True
 
     @property
@@ -84,5 +88,6 @@ def get_settings() -> Settings:
         llm_model=os.getenv("LLM_MODEL", "deepseek-flash"),
         embedding_mode=os.getenv("EMBEDDING_MODE", "hash"),
         embedding_dim=int(os.getenv("EMBEDDING_DIM", "256")),
+        anchor_min_sim=float(os.getenv("ANCHOR_MIN_SIM", "0.60")),
         offline_mode=_env_bool("OFFLINE_MODE", True),
     )

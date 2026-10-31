@@ -1,0 +1,37 @@
+rule_id: R-STYLE-004
+version: 1
+category: STYLE
+title: 冲突风格对
+severity: soft
+scope: outfit
+condition:
+  field: outfit.style.conflict_pair_count
+  op: gte
+  value: 1
+effect: penalty
+score_impact:
+  dimension: D2
+  delta: -5.0
+explain_template: '{outfit.style.conflict_pair_a} 与 {outfit.style.conflict_pair_b} 属于难融合的风格对。'
+evidence_fields:
+- outfit.style.conflict_pair_count
+- outfit.style.conflict_pair_a
+- outfit.style.conflict_pair_b
+source: domain_expert
+status: active
+suppresses:
+- R-STYLE-003
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-004
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-004
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-004
+    expect: miss
+suggestion_template: 两种风格二选一，把另一件换成中性基础款，或加一件中性单品隔开。

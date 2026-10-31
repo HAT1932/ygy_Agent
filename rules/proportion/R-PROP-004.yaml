@@ -1,0 +1,36 @@
+rule_id: R-PROP-004
+version: 1
+category: PROPORTION
+title: 五五分
+severity: soft
+scope: outfit
+condition:
+  field: outfit.structure.visual_waist_y
+  op: between
+  value:
+  - 0.46
+  - 0.54
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -3.0
+explain_template: 视觉腰线落在 {outfit.structure.visual_waist_y}，接近上下对半，身材比例不占优。
+evidence_fields:
+- outfit.structure.visual_waist_y
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-004
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-004
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-004
+    expect: miss
+suggestion_template: 把上装塞入并换高腰下装，把视觉腰线提高到 0.42 以上。

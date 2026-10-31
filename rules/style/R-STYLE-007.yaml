@@ -1,0 +1,35 @@
+rule_id: R-STYLE-007
+version: 1
+category: STYLE
+title: 潮流元素过载
+severity: soft
+scope: outfit
+condition:
+  field: outfit.style.trend_tag_count
+  op: gte
+  value: 3
+effect: penalty
+score_impact:
+  dimension: D2
+  delta: -2.0
+explain_template: 这套搭配同时出现 {outfit.style.trend_tag_count} 个潮流元素，重点互相分散。
+evidence_fields:
+- outfit.style.trend_tag_count
+- outfit.style_tags
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-007
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-007
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-007
+    expect: miss
+suggestion_template: 只保留 1 到 2 个潮流元素，其余换成基础款，或把潮流点集中到配饰上。

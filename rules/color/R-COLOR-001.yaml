@@ -1,0 +1,39 @@
+rule_id: R-COLOR-001
+version: 1
+category: COLOR
+title: 高饱和撞色
+severity: hard
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.colors.hue_span
+    op: gt
+    value: 120
+  - field: outfit.colors.max_saturation
+    op: gt
+    value: 0.85
+effect: veto
+score_impact:
+  dimension: D1
+  delta: -7.8
+explain_template: 上下装色相跨度达 {outfit.colors.hue_span|deg}，最高饱和度 {outfit.colors.max_saturation}，高饱和撞色让焦点互相争夺。
+evidence_fields:
+- outfit.colors.hue_span
+- outfit.colors.max_saturation
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 10
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-001
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-001
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-001
+    expect: miss
+suggestion_template: 把面积较小的上装或下装换成米白、藏青或炭灰的中性色同款，把色相跨度收进 90 度以内。

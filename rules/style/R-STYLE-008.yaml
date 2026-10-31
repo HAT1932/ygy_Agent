@@ -1,0 +1,32 @@
+rule_id: R-STYLE-008
+version: 1
+category: STYLE
+title: 命中 top-1 风格
+severity: boost
+scope: outfit
+condition:
+  field: outfit.style.primary_matches_profile_top1
+  op: is_true
+effect: bonus
+score_impact:
+  dimension: D2
+  delta: 4.0
+explain_template: 这套搭配的主基调正是你最常穿的 {ctx.top_style_cn}，方向非常稳定。
+evidence_fields:
+- outfit.style.primary_matches_profile_top1
+- outfit.style.primary_style
+- ctx.top_style_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-008
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-008
+    expect: miss
+reinforce_template: 这个方向可以保留：保持主基调单品占比最高，再小面积尝试新元素即可。

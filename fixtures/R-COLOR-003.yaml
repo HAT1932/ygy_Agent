@@ -1,0 +1,155 @@
+fixture_id: R-COLOR-003
+rule_id: R-COLOR-003
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 针织衫
+      material: 棉
+      colors:
+      - hex: '#FF8C00'
+        name: 橙色
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.35
+    - slot: lower
+      category: 西裤
+      material: 羊毛
+      colors:
+      - hex: '#1F6FD0'
+        name: 宝蓝
+      style_tags: []
+      attrs:
+        formality: 0.25
+        area_ratio: 0.4
+    - slot: shoes
+      category: 单鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF8C00'
+        name: 橙色
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.1
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-cool-only
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 针织衫
+      material: 棉
+      colors:
+      - hex: '#4E7A52'
+        name: 墨绿
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.35
+    - slot: lower
+      category: 西裤
+      material: 羊毛
+      colors:
+      - hex: '#1F6FD0'
+        name: 宝蓝
+      style_tags: []
+      attrs:
+        formality: 0.25
+        area_ratio: 0.4
+    - slot: shoes
+      category: 单鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF8C00'
+        name: 橙色
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.1
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-warm-only
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 针织衫
+      material: 棉
+      colors:
+      - hex: '#FF8C00'
+        name: 橙色
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.35
+    - slot: lower
+      category: 西裤
+      material: 羊毛
+      colors:
+      - hex: '#A8A8A8'
+        name: 中灰
+      style_tags: []
+      attrs:
+        formality: 0.25
+        area_ratio: 0.4
+    - slot: shoes
+      category: 单鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF8C00'
+        name: 橙色
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.1
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

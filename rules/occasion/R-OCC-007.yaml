@@ -1,0 +1,42 @@
+rule_id: R-OCC-007
+version: 1
+category: OCCASION
+title: 正式场合缺层次
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: eq
+    value: formal
+  - field: outfit.structure.has_outer
+    op: is_false
+  - field: outfit.garment_count
+    op: lt
+    value: 3
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -2.0
+explain_template: 正式场合只有 {outfit.garment_count} 件单品且没有外套，完整度不足。
+evidence_fields:
+- outfit.occasion
+- outfit.structure.has_outer
+- outfit.garment_count
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-007
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-007
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-007
+    expect: miss
+suggestion_template: 加一件结构型外套，比如西装或大衣，补足正式场合的层次。

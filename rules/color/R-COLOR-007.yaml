@@ -1,0 +1,51 @@
+rule_id: R-COLOR-007
+version: 1
+category: COLOR
+title: 荧光高饱和大面积
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.colors.max_saturation
+    op: gt
+    value: 0.9
+  - field: outfit.colors.max_sat_area_ratio
+    op: gt
+    value: 0.3
+  - any:
+    - field: outfit.colors.max_sat_hue
+      op: between
+      value:
+      - 60
+      - 85
+    - field: outfit.colors.max_sat_hue
+      op: between
+      value:
+      - 300
+      - 330
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -4.0
+explain_template: 面积占 {outfit.colors.max_sat_area_ratio|pct} 的荧光色饱和度达 {outfit.colors.max_saturation}，抢眼过度。
+evidence_fields:
+- outfit.colors.max_saturation
+- outfit.colors.max_sat_area_ratio
+- outfit.colors.max_sat_hue
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-007
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-007
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-007
+    expect: miss
+suggestion_template: 把荧光色单品换成同色相的低饱和款，比如荧光绿换成橄榄绿，或把亮色收进配饰。

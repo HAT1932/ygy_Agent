@@ -1,0 +1,40 @@
+rule_id: R-PROP-010
+version: 1
+category: PROPORTION
+title: 上松下紧
+severity: boost
+scope: cross_garment
+condition:
+  all:
+  - field: garment.top.fit
+    op: in
+    value:
+    - loose
+    - oversized
+  - field: garment.bottom.fit
+    op: in
+    value:
+    - tight
+    - slim
+effect: bonus
+score_impact:
+  dimension: D3
+  delta: 3.0
+explain_template: 上装宽松、下装收窄，上松下紧的收放关系很清晰。
+evidence_fields:
+- garment.top.fit
+- garment.bottom.fit
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-010
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-010
+    expect: miss
+reinforce_template: 这个收放关系可以保留：换单品时让上下只松一边，轮廓就不会散。

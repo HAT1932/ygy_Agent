@@ -1,0 +1,155 @@
+fixture_id: R-OCC-008
+rule_id: R-OCC-008
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: sport
+    season: unknown
+    items:
+    - slot: upper
+      category: 运动上衣
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.3
+    - slot: lower
+      category: 运动裤
+      material: 涤纶
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.35
+    - slot: shoes
+      category: 皮鞋
+      material: 牛皮
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.7
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-synthetic-shoes
+  expect: miss
+  outfit:
+    occasion: sport
+    season: unknown
+    items:
+    - slot: upper
+      category: 运动上衣
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.3
+    - slot: lower
+      category: 运动裤
+      material: 涤纶
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.35
+    - slot: shoes
+      category: 跑鞋
+      material: 网布
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.7
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-low-formality
+  expect: miss
+  outfit:
+    occasion: sport
+    season: unknown
+    items:
+    - slot: upper
+      category: 运动上衣
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.3
+    - slot: lower
+      category: 运动裤
+      material: 涤纶
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.15
+        area_ratio: 0.35
+    - slot: shoes
+      category: 皮鞋
+      material: 牛皮
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.4
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

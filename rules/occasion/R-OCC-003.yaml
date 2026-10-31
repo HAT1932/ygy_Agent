@@ -1,0 +1,38 @@
+rule_id: R-OCC-003
+version: 1
+category: OCCASION
+title: 正式度不足
+severity: soft
+scope: outfit
+condition:
+  field: derived.formality_gap
+  op: lt
+  value: -0.2
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -4.0
+explain_template: 正式度 {outfit.formality} 低于{ctx.occasion_cn}所需的 {outfit.occasion.required_formality}。
+evidence_fields:
+- derived.formality_gap
+- outfit.formality
+- outfit.occasion.required_formality
+- ctx.occasion_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-003
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-003
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-003
+    expect: miss
+mutex_group: OCC_FORMALITY
+suggestion_template: 把外套或鞋换成更正式的款式，比如西装外套配皮质单鞋。

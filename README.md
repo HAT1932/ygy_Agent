@@ -4,8 +4,51 @@
 >
 > 本文档集回答三件事：**怎么做**（方案）、**市面上谁在做**（调研）、**能不能抄**（逆向评估）。
 >
-> 版本：v1.0 ｜ 日期：2026-10-31 ｜ 状态：待评审
-> 范围：**设计文档，不含代码**。按要求本轮只交付 PRD + 设计方案 + 技术选型。
+> 版本：v1.1 ｜ 日期：2026-10-31 ｜ 状态：**设计文档 + 已落地的参考实现**
+> 内容：`docs/` 是设计（PRD / 架构 / 规则 / 契约 / 选型 / 调研 / 逆向）；仓库根是**可运行代码**（50 条规则 + 双塔 + Report + Web）。
+
+---
+
+## 快速开始（30 秒跑起来）
+
+```bash
+pip install -r requirements.txt
+
+# 离线模式（无 key 也能全链路演示：mock 解析 + 模板文案）
+python run.py --offline
+#   → 前端 http://127.0.0.1:8000/     API 文档 /docs     健康检查 /v1/health
+
+# 在线模式（用 .env 里的 key 调真实 VLM + LLM）
+cp .env.example .env      # 填入 DASHSCOPE_API_KEY / DEEPSEEK_API_KEY
+python run.py --online
+```
+
+**用真实图片演示**（已经内置 4 张示意图，也可换成真人穿搭照）：
+
+```bash
+python scripts/make_sample_images.py        # 生成 assets/samples/*.png
+# 然后在前端页面上把这些图片路径粘进 image_refs：
+#   assets/samples/commute_polished.png
+#   assets/samples/color_clash.png
+```
+
+**验证与评测**：
+
+```bash
+python -m pytest -q                        # 182 项测试
+python eval/run_eval.py                    # 20 套标注评测集（Spearman / 追溯率 / 确定性）
+python scripts/rule_coverage_report.py     # 规则判别力体检（找出无区分度的规则）
+```
+
+| 已验证的事实 | 实测值 |
+|---|---|
+| 规则集 | 50 条，lint 0 error，COLOR 12 / STYLE 10 / PROP 10 / OCC 10 / DET 8 |
+| 测试 | 182 passed（契约/评分/解析/双塔/合成/规则/API） |
+| 评测 | Spearman **0.7376**、追溯率 **100%**、确定性 **100%**、硬规则 veto 生效 |
+| 真实 VLM | qwen3.7-plus，512² 图 = **258 image tokens**，≈11 s/图 |
+| 真实 LLM | deepseek-flash 润色，≈2.3 s，总评会引用规则证据（色相跨度/冷暖占比/同源度） |
+
+⚠️ **实现过程中发现的 7 个设计问题**（含「强烈推荐档不可达」「34% 规则无判别力」「评测集是合成的」）记录在 **[10-implementation-findings](./docs/10-implementation-findings.md)**，上线前必须逐条处理。
 
 ---
 

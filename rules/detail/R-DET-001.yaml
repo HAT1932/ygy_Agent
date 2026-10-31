@@ -1,0 +1,34 @@
+rule_id: R-DET-001
+version: 1
+category: DETAIL
+title: 配饰过载
+severity: soft
+scope: outfit
+condition:
+  field: outfit.structure.accessory_count
+  op: gte
+  value: 5
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -3.0
+explain_template: 整身配饰达到 {outfit.structure.accessory_count} 件，重点互相争夺。
+evidence_fields:
+- outfit.structure.accessory_count
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-001
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-001
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-001
+    expect: miss
+suggestion_template: 把配饰去掉到 2 到 3 件，优先去掉量感最大的配饰。

@@ -1,0 +1,39 @@
+rule_id: R-COLOR-010
+version: 1
+category: COLOR
+title: 金属色冲突
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.colors.n_metal
+    op: gte
+    value: 2
+  - field: outfit.colors.metal_hue_span
+    op: gt
+    value: 60
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -2.0
+explain_template: 整身有 {outfit.colors.n_metal} 件金属质感单品，色相相差 {outfit.colors.metal_hue_span|deg}，冷暖不统一。
+evidence_fields:
+- outfit.colors.n_metal
+- outfit.colors.metal_hue_span
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-010
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-010
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-010
+    expect: miss
+suggestion_template: 把金属单品统一成一种色调，全金或全银，或把其中一件换成皮质、树脂材质。

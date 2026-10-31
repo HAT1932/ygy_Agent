@@ -1,0 +1,36 @@
+rule_id: R-DET-007
+version: 1
+category: DETAIL
+title: 材质呼应
+severity: boost
+scope: outfit
+condition:
+  all:
+  - field: outfit.materials.max_family_count
+    op: gte
+    value: 2
+  - field: outfit.materials.family_slot_count
+    op: gte
+    value: 2
+effect: bonus
+score_impact:
+  dimension: D5
+  delta: 3.0
+explain_template: 同材质单品覆盖 {outfit.materials.family_slot_count} 个部位，质感统一。
+evidence_fields:
+- outfit.materials.max_family_count
+- outfit.materials.family_slot_count
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-007
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-007
+    expect: miss
+reinforce_template: 这个材质呼应可以保留：换单品时至少让两个部位用同一材质家族。

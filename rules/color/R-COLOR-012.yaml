@@ -1,0 +1,39 @@
+rule_id: R-COLOR-012
+version: 1
+category: COLOR
+title: 同色系渐变
+severity: boost
+scope: outfit
+condition:
+  all:
+  - field: outfit.colors.n_same_family_max
+    op: gte
+    value: 3
+  - field: outfit.colors.luminance_monotonic
+    op: is_true
+effect: bonus
+score_impact:
+  dimension: D1
+  delta: 4.0
+explain_template: '{outfit.colors.n_same_family_max} 件单品同属一个颜色家族且明度逐级递进，配色层次很干净。'
+evidence_fields:
+- outfit.colors.n_same_family_max
+- outfit.colors.luminance_monotonic
+source: domain_expert
+status: active
+suppresses:
+- R-COLOR-004
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-012
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-012
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-012
+    expect: miss
+reinforce_template: 这个层次可以保留：下次换颜色时，让同家族单品的明度差保持在 0.08 以上即可。

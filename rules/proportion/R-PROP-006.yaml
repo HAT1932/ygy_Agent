@@ -1,0 +1,46 @@
+rule_id: R-PROP-006
+version: 1
+category: PROPORTION
+title: 外套长度卡最宽处
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.structure.has_outer
+    op: is_true
+  - field: garment.outer.length_ratio
+    op: between
+    value:
+    - 0.42
+    - 0.56
+  - field: garment.bottom.fit
+    op: in
+    value:
+    - loose
+    - oversized
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -3.0
+explain_template: 外套下摆长度比 {garment.outer.length_ratio} 正好落在胯部最宽处，放大横向视觉。
+evidence_fields:
+- outfit.structure.has_outer
+- garment.outer.length_ratio
+- garment.bottom.fit
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-006
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-006
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-006
+    expect: miss
+suggestion_template: 把外套换成腰线以上的短款，或换成长度过膝的长款。

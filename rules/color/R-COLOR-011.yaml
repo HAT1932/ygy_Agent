@@ -1,0 +1,47 @@
+rule_id: R-COLOR-011
+version: 1
+category: COLOR
+title: 色彩呼应
+severity: boost
+scope: cross_garment
+condition:
+  all:
+  - field: garment.bottom.present
+    op: is_true
+  - any:
+    - field: garment.bag.present
+      op: is_true
+    - field: garment.accessory.present
+      op: is_true
+  - field: outfit.colors.bottom_accent_hue_dist
+    op: lt
+    value: 25
+effect: bonus
+score_impact:
+  dimension: D1
+  delta: 3.0
+explain_template: 下装与{outfit.colors.bottom_accent_slot}色相只差 {outfit.colors.bottom_accent_hue_dist|deg}，呼应完整。
+evidence_fields:
+- garment.bottom.present
+- garment.bag.present
+- garment.accessory.present
+- outfit.colors.bottom_accent_hue_dist
+- outfit.colors.bottom_accent_slot
+source: domain_expert
+status: active
+suppresses:
+- R-COLOR-010
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-011
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-011
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-011
+    expect: miss
+reinforce_template: 这个呼应可以保留：下次换颜色时，让配饰的色相与下装保持在 25 度以内即可。

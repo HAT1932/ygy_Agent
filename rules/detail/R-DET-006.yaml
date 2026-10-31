@@ -1,0 +1,49 @@
+rule_id: R-DET-006
+version: 1
+category: DETAIL
+title: 收口断点
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.structure.is_tucked
+    op: is_true
+  - field: garment.bottom.waist
+    op: eq
+    value: high
+  - field: outfit.structure.has_belt
+    op: is_false
+  - field: outfit.structure.accessory_count
+    op: lte
+    value: 1
+  - field: outfit.formality
+    op: gt
+    value: 0.6
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -2.0
+explain_template: 上装塞入高腰下装，腰线处没有腰带或配饰收口，上下装衔接生硬。
+evidence_fields:
+- outfit.structure.is_tucked
+- garment.bottom.waist
+- outfit.structure.has_belt
+- outfit.structure.accessory_count
+- outfit.formality
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-006
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-006
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-006
+    expect: miss
+suggestion_template: 加一条 2 到 3 厘米的细腰带，颜色与鞋保持一致。

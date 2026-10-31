@@ -1,0 +1,33 @@
+rule_id: R-OCC-010
+version: 1
+category: OCCASION
+title: 场景词呼应
+severity: boost
+scope: outfit
+condition:
+  field: outfit.occasion.expected_tag_overlap_count
+  op: gte
+  value: 2
+effect: bonus
+score_impact:
+  dimension: D4
+  delta: 3.0
+explain_template: '{outfit.occasion.expected_tag_overlap_count} 个风格标签与{ctx.occasion_cn}场合高度契合，场景呼应到位。'
+evidence_fields:
+- outfit.occasion.expected_tag_overlap_count
+- outfit.occasion.expected_tags
+- ctx.occasion_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-010
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-010
+    expect: miss
+reinforce_template: 这个呼应可以保留：下次按场合先选风格标签，再挑具体单品。

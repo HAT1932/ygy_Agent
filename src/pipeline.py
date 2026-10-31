@@ -37,6 +37,10 @@ from .utils import make_id, to_centi
 
 DATA_DIR = Path(__file__).resolve().parent.parent / ".data"
 
+# 锚点相似度下限的默认值（契约默认 0.60）；运行时以 settings.anchor_min_sim 为准，
+# 因为 hash-embedding 与语义 embedding 的余弦分布不同，阈值必须按后端标定。
+ANCHOR_MIN_SIMILARITY: float = 0.60
+
 
 # --------------------------------------------------------------------------
 # 特征与可用度
@@ -302,10 +306,14 @@ class DemoService:
         # ⑧-b 风格匹配
         style_match = _style_match(profile, outfit, features.style_cosine)
 
-        # 双塔召回：用搭配向量找相近参考搭配
+        # 双塔召回：用搭配向量找相近参考搭配。
+        # 阈值来自配置（契约默认 0.60）：**hash 模式的余弦区间被压缩**（实测 0.10–0.40），
+        # 用 0.60 会导致锚点永远为空。所以阈值必须随 embedding 后端标定，见 .env 注释。
         ov = self.encoder.encode_outfit(outfit)
+        min_sim = self.settings.anchor_min_sim
         anchors = [Anchor(outfit_id=oid, similarity=round(sim, 4))
-                   for oid, sim in self.store.search(list(ov), k=3)]
+                   for oid, sim in self.store.search(list(ov), k=5)
+                   if sim >= min_sim][:3]
 
         # ⑨ 合成（模板优先；LLM 仅在可用时润色）
         from .synthesis import synthesize
@@ -381,11 +389,34 @@ class DemoService:
                 "profiles": len(self._profiles), "reports": len(self._reports)}
 
 
+    def reset(self) -> None:
+        """清空内存与磁盘状态（评测/回归必须从干净状态开始，避免跨用例污染）。"""
+        self._profiles.clear()
+        self._reports.clear()
+        self._outfits.clear()
+        if self._store is not None:
+            try:
+                self._store.reset()          # type: ignore[attr-defined]
+            except AttributeError:
+                pass
+        if self.persist:
+            p = DATA_DIR / "state.json"
+            if p.exists():
+                p.unlink()
+
+
 _SERVICE: DemoService | None = None
 
 
-def get_service() -> DemoService:
+def get_service(*, fresh: bool = False, persist: bool = True) -> DemoService:
+    """取服务实例。
+
+    fresh=True 返回**不复用、不落盘**的新实例 —— 评测与测试必须用这种方式，
+    否则上一次运行的画像/报告会污染下一次（违反确定性与可复现验收）。
+    """
     global _SERVICE
+    if fresh:
+        return DemoService(persist=False)
     if _SERVICE is None:
-        _SERVICE = DemoService(persist=True)
+        _SERVICE = DemoService(persist=persist)
     return _SERVICE

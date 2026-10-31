@@ -420,14 +420,21 @@ def test_cors_allows_local_origin(client: TestClient) -> None:
 
 
 def test_real_pipeline_end_to_end() -> None:
-    """真实链路冒烟：画像 → 报告 → 契约校验。
+    """真实链路冒烟：画像 → 报告 → 契约校验（钉死离线，零网络、零落盘）。
 
     依赖 rules/ 与 IO 层；这些模块尚未落地时跳过（而不是让 API 测试变红）。
     """
-    try:
-        from src.pipeline import get_service
+    import os
 
-        svc = get_service()
+    try:
+        # 测试必须可复现：强制 mock 解析 + 模板文案，避免读到 .env 里的真实 key
+        os.environ["OFFLINE_MODE"] = "true"
+        from src.config import get_settings
+
+        get_settings.cache_clear()
+        from src.pipeline import DemoService
+
+        svc = DemoService(persist=False)
         info = svc.health()
     except Exception as exc:  # pragma: no cover - 依赖未就绪时走这里
         pytest.skip(f"pipeline 尚未就绪: {exc}")

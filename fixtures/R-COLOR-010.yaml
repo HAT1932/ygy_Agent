@@ -1,0 +1,223 @@
+fixture_id: R-COLOR-010
+rule_id: R-COLOR-010
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.3
+    - slot: lower
+      category: 长裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.55
+        area_ratio: 0.12
+    - slot: accessory
+      category: 金属链条包
+      material: 金属
+      colors:
+      - hex: '#C9A227'
+        name: 金色
+      style_tags: []
+      attrs:
+        metal: true
+        formality: 0.55
+        area_ratio: 0.08
+      key: bag
+    - slot: accessory
+      category: 金属手环
+      material: 金属
+      colors:
+      - hex: '#A8B8C8'
+        name: 银蓝
+      style_tags: []
+      attrs:
+        metal: true
+        formality: 0.55
+        area_ratio: 0.05
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-one-metal
+  expect: miss
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.3
+    - slot: lower
+      category: 长裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.55
+        area_ratio: 0.12
+    - slot: accessory
+      category: 金属链条包
+      material: 金属
+      colors:
+      - hex: '#C9A227'
+        name: 金色
+      style_tags: []
+      attrs:
+        metal: true
+        formality: 0.55
+        area_ratio: 0.08
+      key: bag
+    - slot: accessory
+      category: 皮质手环
+      material: 牛皮
+      colors:
+      - hex: '#8B5A2B'
+        name: 棕
+      style_tags: []
+      attrs:
+        formality: 0.55
+        area_ratio: 0.05
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-same-metal-hue
+  expect: miss
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.3
+    - slot: lower
+      category: 长裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.5
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#111111'
+        name: 黑色
+      style_tags: []
+      attrs:
+        formality: 0.55
+        area_ratio: 0.12
+    - slot: accessory
+      category: 金属链条包
+      material: 金属
+      colors:
+      - hex: '#C9A227'
+        name: 金色
+      style_tags: []
+      attrs:
+        metal: true
+        formality: 0.55
+        area_ratio: 0.08
+      key: bag
+    - slot: accessory
+      category: 金色手环
+      material: 金属
+      colors:
+      - hex: '#D4AF37'
+        name: 金
+      style_tags: []
+      attrs:
+        metal: true
+        formality: 0.55
+        area_ratio: 0.05
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

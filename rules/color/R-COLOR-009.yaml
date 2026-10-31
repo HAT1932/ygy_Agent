@@ -1,0 +1,39 @@
+rule_id: R-COLOR-009
+version: 1
+category: COLOR
+title: 图案叠加撞色
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.colors.n_patterns
+    op: gte
+    value: 1
+  - field: outfit.colors.hue_span
+    op: gt
+    value: 90
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -2.0
+explain_template: 这套搭配既有图案，又叠加了 {outfit.colors.hue_span|deg} 的色相跨度，信息量过载。
+evidence_fields:
+- outfit.colors.n_patterns
+- outfit.colors.hue_span
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-009
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-009
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-009
+    expect: miss
+suggestion_template: 把图案单品的配色收回同色系，或把撞色单品换成纯色中性款。

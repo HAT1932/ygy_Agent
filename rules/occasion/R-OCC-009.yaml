@@ -1,0 +1,37 @@
+rule_id: R-OCC-009
+version: 1
+category: OCCASION
+title: 场合正式度精确匹配
+severity: boost
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion.max_formality_dev
+    op: lte
+    value: 0.1
+  - field: outfit.garment_count
+    op: gte
+    value: 3
+effect: bonus
+score_impact:
+  dimension: D4
+  delta: 4.0
+explain_template: '{outfit.garment_count} 件单品的正式度都落在{ctx.occasion_cn}场合区间内，整体很统一。'
+evidence_fields:
+- outfit.occasion.max_formality_dev
+- outfit.garment_count
+- ctx.occasion_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-009
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-009
+    expect: miss
+reinforce_template: 这个正式度可以保留：换单品时让正式度都落在场合要求附近即可。

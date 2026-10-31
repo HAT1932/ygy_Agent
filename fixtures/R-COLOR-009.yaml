@@ -1,0 +1,159 @@
+fixture_id: R-COLOR-009
+rule_id: R-COLOR-009
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+      pattern: stripe
+    - slot: lower
+      category: 长裤
+      material: 棉
+      colors:
+      - hex: '#00C020'
+        name: 亮绿
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-hue-close
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+      pattern: stripe
+    - slot: lower
+      category: 长裤
+      material: 棉
+      colors:
+      - hex: '#C97A8B'
+        name: 灰粉
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-no-pattern
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+      pattern: solid
+    - slot: lower
+      category: 长裤
+      material: 棉
+      colors:
+      - hex: '#00C020'
+        name: 亮绿
+      style_tags: []
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+      pattern: solid
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

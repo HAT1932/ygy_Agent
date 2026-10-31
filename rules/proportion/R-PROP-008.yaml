@@ -1,0 +1,37 @@
+rule_id: R-PROP-008
+version: 1
+category: PROPORTION
+title: 裤长堆积
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.structure.hem_pooling
+    op: is_true
+  - field: garment.shoes.present
+    op: is_true
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -2.0
+explain_template: 裤脚在鞋面上堆积，整身线条显得拖沓。
+evidence_fields:
+- outfit.structure.hem_pooling
+- garment.shoes.present
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-008
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-008
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-008
+    expect: miss
+suggestion_template: 把裤长改短或换成九分长度，露出踝部。

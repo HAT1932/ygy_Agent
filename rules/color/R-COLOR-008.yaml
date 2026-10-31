@@ -1,0 +1,36 @@
+rule_id: R-COLOR-008
+version: 1
+category: COLOR
+title: 图案类型混用
+severity: soft
+scope: outfit
+condition:
+  field: outfit.colors.n_patterns
+  op: gte
+  value: 2
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -3.0
+explain_template: 这套搭配同时出现 {outfit.colors.n_patterns} 种图案（{outfit.colors.pattern_types|list}），图案之间互相抢戏。
+evidence_fields:
+- outfit.colors.n_patterns
+- outfit.colors.pattern_types
+source: domain_expert
+status: active
+suppresses:
+- R-COLOR-009
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-008
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-008
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-008
+    expect: miss
+suggestion_template: 只保留一种图案，把其余图案单品换成纯色同色系的款式。

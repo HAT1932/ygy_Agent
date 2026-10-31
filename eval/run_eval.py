@@ -515,11 +515,22 @@ def main(argv: list[str] | None = None) -> int:
                         help="未达标也以 0 退出（默认未达标返回 1）")
     parser.add_argument("--no-second-run", action="store_true",
                         help="跳过确定性复跑（不推荐；会使确定性指标为 N/A）")
+    parser.add_argument("--online", action="store_true",
+                        help="允许读取 .env 的真实模型（默认强制离线，保证评测可复现）")
     args = parser.parse_args(argv)
 
     if not args.cases.exists():
         print(f"找不到用例文件：{args.cases}", file=sys.stderr)
         return 2
+
+    # 评测默认钉死离线：mock 解析 + 模板文案 + 本地 hash embedding。
+    # 理由（docs/08 §1）：用真实 VLM/LLM 跑评测时分数会受模型版本/网络/非确定性影响，
+    # 且不可复现；评测要测的是规则引擎与链路，不是模型今天的状态。
+    # 需要评估真实模型链路时才显式 `--online`（结果不保证可复现，JSON 里会标注）。
+    if not args.online:
+        import os
+
+        os.environ["OFFLINE_MODE"] = "true"
 
     meta, cases = load_cases(args.cases)
     coverage = check_coverage(cases)
@@ -566,7 +577,7 @@ def main(argv: list[str] | None = None) -> int:
         "cases_file": str(args.cases),
         "cases_meta": meta,
         "coverage": coverage,
-        "environment": service_env(svc),
+        "environment": {**service_env(svc), "offline_pinned_by_eval": not args.online},
         "metrics": metrics,
         "cases": results,
         "honesty_note": (

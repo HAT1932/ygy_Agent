@@ -1,0 +1,44 @@
+rule_id: R-OCC-005
+version: 1
+category: OCCASION
+title: 通勤场合过度暴露
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: eq
+    value: business
+  - any:
+    - field: garment.top.length
+      op: eq
+      value: crop
+    - field: garment.dress.length_ratio
+      op: lt
+      value: 0.35
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -4.0
+explain_template: 通勤场合出现了露出面积偏多的上装或短裙，与场合的收敛要求不符。
+evidence_fields:
+- outfit.occasion
+- garment.top.length
+- garment.dress.length_ratio
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-005
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-005
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-005
+    expect: miss
+suggestion_template: 加一件同色内搭，或把下装换成及膝长度的款式。

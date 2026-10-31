@@ -1,0 +1,325 @@
+# ============================================================================
+# AI 穿搭顾问 · 20 套人工标注评测集（冒烟集）
+# ----------------------------------------------------------------------------
+# 事实源：docs/08-evaluation-and-implementation.md §2（规模/采样/标注协议）
+#         docs/00-baseline.md §10（质量门槛）
+#
+# 重要说明（诚实披露，勿删）：
+#   1. 这是**演示用模拟标注**：标注者是 3 个虚拟角色，按下面 §标注口径 独立给出
+#      总分，不是真实形象顾问的盲评结果。真实标注须按 docs/08 §2.2 执行。
+#   2. 标注时**未参考系统输出**（本文件先于跑分编写），因此 Spearman 是真实
+#      的「人机一致性」测量，不是拟合出来的。
+#   3. 人工总分只到「总分」粒度（20 套冒烟集不做维度分标注）；维度 Spearman
+#      留给 100 套迭代集（docs/08 §2.1）。
+#
+# 标注口径（3 名虚拟标注者共享的 rubric，0–100 总分）：
+#   85–95  色彩克制和谐、正式度与声明场合吻合、细节完整、与画像主风格一致
+#   70–84  整体合适，有 1 处小问题（配饰略多 / 比例一般 / 风格略偏）
+#   60–69  场合基本能穿，但存在明显短板（缺件 / 正式度偏差 / 配饰过载）
+#   50–59  多处问题叠加，只在特定场景勉强成立
+#   35–49  硬冲突：高饱和撞色、运动装出席正式场合、正式场合缺鞋
+#   verdict 由均值换算：>=80 强烈推荐 | 65–79.99 适合 | 50–64.99 一般 | <50 不适合
+#
+# 采样覆盖（docs/08 §2.1）：
+#   场景  commute×5 / date×3 / sport×5 / formal×3 / home×4
+#   风格  minimal×5 / french×5 / american_vintage×3 / japanese×4 / sweet_cool×3
+#   难度  good×6 / bad×6 / boundary×8
+#   画像  p01–p05 共 5 个虚拟用户，每人 4 套
+#   配对  5 对「同一套衣服 × 两个不同画像」（tags 里 pair_check:*）
+#   风格归类说明：mock parser 的 10 个剧本没有「美式复古 / 日系 / 甜酷」标签，
+#   本文件的 style_ref 是**人工风格归类**（如印花T+宽松牛仔→美式复古，
+#   运动装/亚麻叠穿→日系，甜美T+工装裤→甜酷），不是解析器输出的 style_tags。
+#
+# ref 规则（src/parsing/mock.py 已确认，最长别名优先）：
+#   commute / mono / clash / casual / date / accessory / sport /
+#   formal_suit→formal / formal_missing→missing / season
+#   `demo/formal_missing-*` 命中 formal_missing（"missing" 比 "formal" 长）。
+#   occasion 必须显式传，否则 D4 整组按约定跳过。
+# ============================================================================
+
+meta:
+  version: 1
+  dataset: smoke-20
+  n_cases: 20
+  annotators_per_case: 3
+  annotation_protocol: simulated-rubric-blind
+  rubric_scenarios: [commute, date, sport, formal, home]
+  rubric_styles: [minimal, french, american_vintage, japanese, sweet_cool]
+  disclosure: >-
+    模拟标注：3 名虚拟标注者按统一 rubric 独立给总分，非真实形象顾问盲评；
+    标注先于跑分完成，未参考系统输出。真实标定须按 docs/08 §2.2 执行。
+
+cases:
+  # ---------------- p01 极简通勤型用户（参考：通勤/同色系/通勤） ----------------
+  - case_id: c01
+    user_id: p01
+    scenario: commute
+    style_ref: minimal
+    difficulty: good
+    profile_refs: ["demo/commute-1", "demo/mono-1", "demo/commute-2"]
+    outfit_refs: ["demo/commute-1"]
+    occasion: business
+    season: autumn
+    annotators: [82, 85, 86]
+    human_verdict: strongly_recommended
+    human_note: 中性色、正式度贴合通勤，四件齐备，几乎挑不出问题。
+    tags: [pair_check:commute_p01_p05]
+
+  - case_id: c02
+    user_id: p01
+    scenario: commute
+    style_ref: french
+    difficulty: good
+    profile_refs: ["demo/commute-1", "demo/mono-1", "demo/commute-2"]
+    outfit_refs: ["demo/mono-1"]
+    occasion: business
+    season: autumn
+    annotators: [80, 83, 84]
+    human_verdict: strongly_recommended
+    human_note: 驼色大衣+棕系同族明度递进，通勤也稳，只是略偏法式。
+
+  - case_id: c03
+    user_id: p01
+    scenario: commute
+    style_ref: sweet_cool
+    difficulty: bad
+    profile_refs: ["demo/commute-1", "demo/mono-1", "demo/commute-2"]
+    outfit_refs: ["demo/clash-1"]
+    occasion: business
+    season: autumn
+    annotators: [42, 45, 48]
+    human_verdict: unsuitable
+    human_note: 玫红配亮绿高饱和撞色，通勤场合完全压不住。
+    tags: [pair_check:clash_p01_p02, pair_check:clash_p01_p03]
+
+  - case_id: c04
+    user_id: p01
+    scenario: sport
+    style_ref: american_vintage
+    difficulty: boundary
+    profile_refs: ["demo/commute-1", "demo/mono-1", "demo/commute-2"]
+    outfit_refs: ["demo/casual-1"]
+    occasion: sport
+    season: autumn
+    annotators: [70, 73, 75]
+    human_verdict: suitable
+    human_note: 印花T+宽松牛仔去运动场合可以，但和本人极简画像有距离。
+    tags: [pair_check:casual_p01_p03]
+
+  # ---------------- p02 法式约会型用户（参考：约会/约会/配饰） ----------------
+  - case_id: c05
+    user_id: p02
+    scenario: date
+    style_ref: french
+    difficulty: good
+    profile_refs: ["demo/date-1", "demo/date-2", "demo/accessory-1"]
+    outfit_refs: ["demo/date-1"]
+    occasion: date
+    season: autumn
+    annotators: [82, 84, 86]
+    human_verdict: strongly_recommended
+    human_note: 真丝衬衫+黑半裙+金属耳饰，约会氛围和质感都对。
+
+  - case_id: c06
+    user_id: p02
+    scenario: date
+    style_ref: french
+    difficulty: boundary
+    profile_refs: ["demo/date-1", "demo/date-2", "demo/accessory-1"]
+    outfit_refs: ["demo/accessory-1"]
+    occasion: date
+    season: winter
+    annotators: [64, 67, 69]
+    human_verdict: suitable
+    human_note: 五件配饰堆在约会装里，重点太多，减到两件会更好。
+
+  - case_id: c07
+    user_id: p02
+    scenario: date
+    style_ref: french
+    difficulty: good
+    profile_refs: ["demo/date-1", "demo/date-2", "demo/accessory-1"]
+    outfit_refs: ["demo/mono-2"]
+    occasion: date
+    season: autumn
+    annotators: [74, 77, 79]
+    human_verdict: suitable
+    human_note: 同色系很稳，但对约会来说偏办公，少一点轻松感。
+
+  - case_id: c08
+    user_id: p02
+    scenario: commute
+    style_ref: sweet_cool
+    difficulty: bad
+    profile_refs: ["demo/date-1", "demo/date-2", "demo/accessory-1"]
+    outfit_refs: ["demo/clash-1"]
+    occasion: business
+    season: autumn
+    annotators: [41, 44, 47]
+    human_verdict: unsuitable
+    human_note: 撞色太吵，且运动鞋配通勤不成立。
+    tags: [pair_check:clash_p01_p02]
+
+  # ---------------- p03 运动街头型用户（参考：运动/休闲/运动） ----------------
+  - case_id: c09
+    user_id: p03
+    scenario: sport
+    style_ref: japanese
+    difficulty: good
+    profile_refs: ["demo/sport-1", "demo/casual-1", "demo/sport-2"]
+    outfit_refs: ["demo/sport-1"]
+    occasion: sport
+    season: summer
+    annotators: [83, 85, 87]
+    human_verdict: strongly_recommended
+    human_note: 卫衣+运动裤+运动鞋，功能和风格都到位。
+    tags: [pair_check:sport_p03_p04]
+
+  - case_id: c10
+    user_id: p03
+    scenario: sport
+    style_ref: american_vintage
+    difficulty: boundary
+    profile_refs: ["demo/sport-1", "demo/casual-1", "demo/sport-2"]
+    outfit_refs: ["demo/casual-1"]
+    occasion: sport
+    season: autumn
+    annotators: [72, 74, 76]
+    human_verdict: suitable
+    human_note: 牛仔+厚底鞋可以动起来，项链在运动时略多余。
+    tags: [pair_check:casual_p01_p03]
+
+  - case_id: c11
+    user_id: p03
+    scenario: sport
+    style_ref: sweet_cool
+    difficulty: bad
+    profile_refs: ["demo/sport-1", "demo/casual-1", "demo/sport-2"]
+    outfit_refs: ["demo/clash-1"]
+    occasion: sport
+    season: summer
+    annotators: [46, 48, 50]
+    human_verdict: unsuitable
+    human_note: 高饱和撞色本身就不适合作日常穿搭，运动场合也救不回来。
+    tags: [pair_check:clash_p01_p03]
+
+  - case_id: c12
+    user_id: p03
+    scenario: home
+    style_ref: japanese
+    difficulty: boundary
+    profile_refs: ["demo/sport-1", "demo/casual-1", "demo/sport-2"]
+    outfit_refs: ["demo/sport-2"]
+    occasion: home
+    season: winter
+    annotators: [76, 78, 80]
+    human_verdict: suitable
+    human_note: 卫衣运动裤居家很舒服，外套帽子上街也不违和。
+
+  # ---------------- p04 正式商务型用户（参考：正式/正式/通勤） ----------------
+  - case_id: c13
+    user_id: p04
+    scenario: formal
+    style_ref: minimal
+    difficulty: good
+    profile_refs: ["demo/formal-1", "demo/formal-2", "demo/commute-3"]
+    outfit_refs: ["demo/formal-1"]
+    occasion: formal
+    season: winter
+    annotators: [84, 86, 88]
+    human_verdict: strongly_recommended
+    human_note: 黑西装+白衬衫+牛津鞋+金属表，正式场合的标准答案。
+
+  - case_id: c14
+    user_id: p04
+    scenario: formal
+    style_ref: minimal
+    difficulty: bad
+    profile_refs: ["demo/formal-1", "demo/formal-2", "demo/commute-3"]
+    outfit_refs: ["demo/formal_missing-1"]
+    occasion: formal
+    season: autumn
+    annotators: [52, 55, 58]
+    human_verdict: neutral
+    human_note: 只有衬衫+西裤，正式场合缺鞋缺外套，撑不起来。
+
+  - case_id: c15
+    user_id: p04
+    scenario: sport
+    style_ref: japanese
+    difficulty: boundary
+    profile_refs: ["demo/formal-1", "demo/formal-2", "demo/commute-3"]
+    outfit_refs: ["demo/sport-1"]
+    occasion: sport
+    season: summer
+    annotators: [64, 66, 68]
+    human_verdict: suitable
+    human_note: 单品本身没问题，但对这个偏正式的画像来说很不像「她」。
+    tags: [pair_check:sport_p03_p04]
+
+  - case_id: c16
+    user_id: p04
+    scenario: formal
+    style_ref: minimal
+    difficulty: bad
+    profile_refs: ["demo/formal-1", "demo/formal-2", "demo/commute-3"]
+    outfit_refs: ["demo/formal_missing-2"]
+    occasion: formal
+    season: autumn
+    annotators: [53, 56, 59]
+    human_verdict: neutral
+    human_note: 与上一套同样的问题：正式场合缺鞋，再干净的配色也不完整。
+
+  # ---------------- p05 混合偏好型用户（参考：休闲/季节/撞色） ----------------
+  - case_id: c17
+    user_id: p05
+    scenario: commute
+    style_ref: minimal
+    difficulty: boundary
+    profile_refs: ["demo/casual-2", "demo/season-1", "demo/clash-1"]
+    outfit_refs: ["demo/commute-1"]
+    occasion: business
+    season: autumn
+    annotators: [74, 76, 78]
+    human_verdict: suitable
+    human_note: 衣服本身很适合通勤，但这个画像平时更休闲，略「不像自己」。
+    tags: [pair_check:commute_p01_p05]
+
+  - case_id: c18
+    user_id: p05
+    scenario: home
+    style_ref: japanese
+    difficulty: boundary
+    profile_refs: ["demo/casual-2", "demo/season-1", "demo/clash-1"]
+    outfit_refs: ["demo/season-1"]
+    occasion: home
+    season: winter
+    annotators: [60, 62, 64]
+    human_verdict: neutral
+    human_note: 亚麻上装和羊毛下装+围巾混在一起，季节感自相矛盾，居家也偏重。
+
+  - case_id: c19
+    user_id: p05
+    scenario: home
+    style_ref: french
+    difficulty: bad
+    profile_refs: ["demo/casual-2", "demo/season-1", "demo/clash-1"]
+    outfit_refs: ["demo/accessory-2"]
+    occasion: home
+    season: winter
+    annotators: [50, 52, 54]
+    human_verdict: neutral
+    human_note: 高跟鞋+五件配饰在家穿，华丽得没有场合。
+
+  - case_id: c20
+    user_id: p05
+    scenario: home
+    style_ref: american_vintage
+    difficulty: boundary
+    profile_refs: ["demo/casual-2", "demo/season-1", "demo/clash-1"]
+    outfit_refs: ["demo/casual-2"]
+    occasion: home
+    season: autumn
+    annotators: [72, 74, 76]
+    human_verdict: suitable
+    human_note: 印花T+牛仔居家很自然，帽子室内稍多余。

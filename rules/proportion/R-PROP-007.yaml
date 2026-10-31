@@ -1,0 +1,50 @@
+rule_id: R-PROP-007
+version: 1
+category: PROPORTION
+title: 阔腿配厚重鞋
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: garment.bottom.fit
+    op: in
+    value:
+    - loose
+    - oversized
+  - field: garment.bottom.length
+    op: eq
+    value: long
+  - any:
+    - field: garment.shoes.fit
+      op: eq
+      value: oversized
+    - field: garment.shoes.length
+      op: eq
+      value: long
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -2.0
+explain_template: 阔腿长裤配了厚重的鞋型，脚部量感过重。
+evidence_fields:
+- garment.bottom.fit
+- garment.bottom.length
+- garment.shoes.fit
+- garment.shoes.length
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-007
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-007
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-007
+    expect: miss
+suggestion_template: 把鞋换成尖头或低帮的轻量款，露出脚踝或鞋头。

@@ -1,0 +1,38 @@
+rule_id: R-COLOR-004
+version: 1
+category: COLOR
+title: 缺少中性锚点
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.colors.has_neutral_anchor
+    op: is_false
+  - field: outfit.colors.mean_saturation
+    op: gt
+    value: 0.5
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -3.0
+explain_template: 整身没有黑白灰或米色的中性色压场，平均饱和度达到 {outfit.colors.mean_saturation}，配色容易显得漂浮。
+evidence_fields:
+- outfit.colors.has_neutral_anchor
+- outfit.colors.mean_saturation
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-004
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-004
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-004
+    expect: miss
+suggestion_template: 把鞋或包换成黑色、白色或裸色的款式，给整身配色一个中性支点。

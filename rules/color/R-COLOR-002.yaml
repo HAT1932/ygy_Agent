@@ -1,0 +1,37 @@
+rule_id: R-COLOR-002
+version: 1
+category: COLOR
+title: 色不过三
+severity: soft
+scope: outfit
+condition:
+  field: outfit.colors.n_main_colors
+  op: gte
+  value: 4
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -4.0
+explain_template: 这套搭配有 {outfit.colors.n_main_colors} 个主色（{outfit.colors.main_colors|list}），超过 3 个，视觉信息过载。
+evidence_fields:
+- outfit.colors.n_main_colors
+- outfit.colors.main_colors
+- ctx.excess_item
+- ctx.dominant_item
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-002
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-002
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-002
+    expect: miss
+suggestion_template: 把面积最小的 {ctx.excess_item} 换成与 {ctx.dominant_item} 同色系的深色，或直接换成米白色的同类单品。

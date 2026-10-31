@@ -25,6 +25,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="监听端口（默认 8000）")
     p.add_argument("--log-level", default=os.getenv("LOG_LEVEL", "info"),
                    help="uvicorn 日志级别（默认 info）")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--offline", dest="offline", action="store_true", default=None,
+                      help="强制离线：mock 解析 + 模板文案，零网络请求")
+    mode.add_argument("--online", dest="offline", action="store_false",
+                      help="强制在线：使用 .env 里的 key 调真实 VLM/LLM")
     args = p.parse_args(argv)
     # 契约允许端口被环境覆盖，但显式参数应优先
     return args
@@ -37,8 +42,12 @@ def main(argv: list[str] | None = None) -> int:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
 
-    # OFFLINE_MODE 默认已为 true；显式写回环境变量，让子进程/重载语义一致
-    os.environ.setdefault("OFFLINE_MODE", "true")
+    # 不强制写死 OFFLINE_MODE：以 .env / 环境变量为准，命令行开关优先级最高。
+    # （早期版本无条件 setdefault(true)，会导致填了 key 也走离线，属于隐蔽坑。）
+    if args.offline is True:
+        os.environ["OFFLINE_MODE"] = "true"
+    elif args.offline is False:
+        os.environ["OFFLINE_MODE"] = "false"
 
     try:
         import uvicorn

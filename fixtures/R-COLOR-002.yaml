@@ -1,0 +1,183 @@
+fixture_id: R-COLOR-002
+rule_id: R-COLOR-002
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.65
+        area_ratio: 0.3
+    - slot: lower
+      category: 西装裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.7
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.75
+        area_ratio: 0.12
+    - slot: accessory
+      category: 托特包
+      material: 牛皮
+      colors:
+      - hex: '#00C020'
+        name: 亮绿
+      style_tags: []
+      attrs:
+        formality: 0.7
+        area_ratio: 0.08
+      key: bag
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-three-colors
+  expect: miss
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.65
+        area_ratio: 0.3
+    - slot: lower
+      category: 西装裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.7
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.75
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-same-family
+  expect: miss
+  outfit:
+    occasion: business
+    season: unknown
+    items:
+    - slot: upper
+      category: 衬衫
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.65
+        area_ratio: 0.3
+    - slot: lower
+      category: 西装裤
+      material: 羊毛
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags:
+      - 通勤知性
+      attrs:
+        formality: 0.7
+        area_ratio: 0.35
+    - slot: shoes
+      category: 乐福鞋
+      material: 牛皮
+      colors:
+      - hex: '#FF0080'
+        name: 玫红
+      style_tags: []
+      attrs:
+        formality: 0.75
+        area_ratio: 0.12
+    - slot: accessory
+      category: 托特包
+      material: 牛皮
+      colors:
+      - hex: '#1F2A44'
+        name: 藏青
+      style_tags: []
+      attrs:
+        formality: 0.7
+        area_ratio: 0.08
+      key: bag
+  features:
+    style_cosine: 0.7
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

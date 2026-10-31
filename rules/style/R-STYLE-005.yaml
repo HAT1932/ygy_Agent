@@ -1,0 +1,34 @@
+rule_id: R-STYLE-005
+version: 1
+category: STYLE
+title: 风格偏移过大
+severity: soft
+scope: outfit
+condition:
+  field: derived.cosine_uv
+  op: lt
+  value: 0.55
+effect: penalty
+score_impact:
+  dimension: D2
+  delta: -3.0
+explain_template: 这套搭配与你的风格相似度只有 {derived.cosine_uv}，偏离你常穿的方向较多。
+evidence_fields:
+- derived.cosine_uv
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-005
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-005
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-005
+    expect: miss
+suggestion_template: 以相似度最高的参考搭配为模板，把主单品换成接近你风格的款式。

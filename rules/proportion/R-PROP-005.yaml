@@ -1,0 +1,34 @@
+rule_id: R-PROP-005
+version: 1
+category: PROPORTION
+title: 视觉重心过低
+severity: soft
+scope: outfit
+condition:
+  field: outfit.structure.visual_center_y
+  op: gt
+  value: 0.62
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -3.0
+explain_template: 视觉重心落在 {outfit.structure.visual_center_y}，整身视觉明显下沉。
+evidence_fields:
+- outfit.structure.visual_center_y
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-005
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-005
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-005
+    expect: miss
+suggestion_template: 把上装换成明度较高的浅色或亮色，把鞋换成轻量的浅口款。

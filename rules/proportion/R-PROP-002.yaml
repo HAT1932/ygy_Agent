@@ -1,0 +1,47 @@
+rule_id: R-PROP-002
+version: 1
+category: PROPORTION
+title: 全身宽松无收束
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: garment.top.fit
+    op: in
+    value:
+    - loose
+    - oversized
+  - field: garment.bottom.fit
+    op: in
+    value:
+    - loose
+    - oversized
+  - field: outfit.structure.is_tucked
+    op: is_false
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -3.0
+explain_template: 上装与下装都是宽松版型，整身没有收束点，轮廓糊成一团。
+evidence_fields:
+- garment.top.fit
+- garment.bottom.fit
+- outfit.structure.is_tucked
+source: domain_expert
+status: active
+suppresses:
+- R-PROP-006
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-002
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-002
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-002
+    expect: miss
+suggestion_template: 把下装换成直筒或修身的版型，或加一条腰带制造收束点。

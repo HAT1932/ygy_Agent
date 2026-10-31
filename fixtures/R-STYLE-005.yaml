@@ -1,0 +1,161 @@
+fixture_id: R-STYLE-005
+rule_id: R-STYLE-005
+cases:
+- case_id: pos-01
+  expect: hit
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: T恤
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 甜美
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+    - slot: lower
+      category: 短裤
+      material: 棉
+      colors:
+      - hex: '#1F6FD0'
+        name: 宝蓝
+      style_tags:
+      - 运动休闲
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.4
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: &id001
+    - 极简
+    - 通勤知性
+    - 法式
+    forbidden_styles: &id002
+    - 洛丽塔
+    explore_tags: &id003
+    - 法式
+    n_ref: 4
+- case_id: neg-01-cosine-high
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: T恤
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 甜美
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+    - slot: lower
+      category: 短裤
+      material: 棉
+      colors:
+      - hex: '#1F6FD0'
+        name: 宝蓝
+      style_tags:
+      - 运动休闲
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.62
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4
+- case_id: neg-02-cosine-boundary
+  expect: miss
+  outfit:
+    occasion: casual
+    season: unknown
+    items:
+    - slot: upper
+      category: T恤
+      material: 棉
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags:
+      - 甜美
+      attrs:
+        formality: 0.3
+        area_ratio: 0.3
+    - slot: lower
+      category: 短裤
+      material: 棉
+      colors:
+      - hex: '#1F6FD0'
+        name: 宝蓝
+      style_tags:
+      - 运动休闲
+      attrs:
+        formality: 0.3
+        area_ratio: 0.35
+    - slot: shoes
+      category: 运动鞋
+      material: 涤纶
+      colors:
+      - hex: '#F2F2F2'
+        name: 米白
+      style_tags: []
+      attrs:
+        formality: 0.2
+        area_ratio: 0.12
+  features:
+    style_cosine: 0.55
+    occasion_fit_prob: 0.8
+  structure:
+    visual_waist_y: 0.5
+    visual_center_y: 0.52
+    is_tucked: false
+    hem_pooling: false
+  profile:
+    top_styles: *id001
+    forbidden_styles: *id002
+    explore_tags: *id003
+    n_ref: 4

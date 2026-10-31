@@ -1,0 +1,37 @@
+rule_id: R-COLOR-006
+version: 1
+category: COLOR
+title: 明度断层过大
+severity: soft
+scope: cross_garment
+condition:
+  field: garment.top.color.lightness
+  op: abs_diff_gt
+  other_field: garment.bottom.color.lightness
+  value: 0.65
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -2.0
+explain_template: 上装与下装明度相差 {outfit.colors.top_bottom_lightness_diff}，上下半身的色调被生硬切断。
+evidence_fields:
+- outfit.colors.top_bottom_lightness_diff
+- garment.top.color.lightness
+- garment.bottom.color.lightness
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-006
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-006
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-006
+    expect: miss
+suggestion_template: 加一条中等明度的腰带或包做桥接，或把下装换成中灰、藏青这类中间明度。

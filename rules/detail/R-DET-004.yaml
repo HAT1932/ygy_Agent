@@ -1,0 +1,42 @@
+rule_id: R-DET-004
+version: 1
+category: DETAIL
+title: 内长外短倒挂
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.structure.has_outer
+    op: is_true
+  - field: outfit.structure.outer_top_length_gap
+    op: gt
+    value: 0.08
+  - field: outfit.formality
+    op: gt
+    value: 0.6
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -2.0
+explain_template: 外套下摆比内搭短 {outfit.structure.outer_top_length_gap}，内搭外露，整体显得凌乱。
+evidence_fields:
+- outfit.structure.has_outer
+- outfit.structure.outer_top_length_gap
+- outfit.formality
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-004
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-004
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-004
+    expect: miss
+suggestion_template: 把内搭塞入下装，或换成与外套等长、更短的内搭，也可以换长一档的外套。

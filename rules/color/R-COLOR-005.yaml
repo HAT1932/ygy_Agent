@@ -1,0 +1,47 @@
+rule_id: R-COLOR-005
+version: 1
+category: COLOR
+title: 同色系糊成一片
+severity: soft
+scope: cross_garment
+condition:
+  all:
+  - field: outfit.colors.top_bottom_hue_dist
+    op: lt
+    value: 15
+  - field: garment.top.color.lightness
+    op: abs_diff_lt
+    other_field: garment.bottom.color.lightness
+    value: 0.12
+  - field: garment.top.color.is_neutral
+    op: is_false
+  - field: garment.bottom.color.is_neutral
+    op: is_false
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -2.0
+explain_template: 上下装色相只差 {outfit.colors.top_bottom_hue_dist|deg}，明度也接近，分不出层次。
+evidence_fields:
+- outfit.colors.top_bottom_hue_dist
+- garment.top.color.lightness
+- garment.bottom.color.lightness
+- garment.top.color.is_neutral
+- garment.bottom.color.is_neutral
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-COLOR-005
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-COLOR-005
+    expect: miss
+  - case_id: neg-02
+    fixture: R-COLOR-005
+    expect: miss
+suggestion_template: 把下装换成同色系但明度差达到 0.25 以上的款式，比如浅沙色上装配深咖色下装。

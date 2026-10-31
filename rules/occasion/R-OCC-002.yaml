@@ -1,0 +1,42 @@
+rule_id: R-OCC-002
+version: 1
+category: OCCASION
+title: 正式场合鞋履不合规
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: eq
+    value: formal
+  - any:
+    - field: outfit.structure.has_shoes
+      op: is_false
+    - field: outfit.structure.has_closed_shoes
+      op: is_false
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -5.0
+explain_template: 正式场合缺少闭合式皮鞋或单鞋，鞋履拖低了整体正式度。
+evidence_fields:
+- outfit.occasion
+- outfit.structure.has_shoes
+- outfit.structure.has_closed_shoes
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-002
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-002
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-002
+    expect: miss
+suggestion_template: 把鞋换成乐福鞋、牛津鞋或低跟单鞋这类皮面闭合款式。

@@ -1,0 +1,39 @@
+rule_id: R-PROP-003
+version: 1
+category: PROPORTION
+title: 全身紧身
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: garment.top.fit
+    op: eq
+    value: tight
+  - field: garment.bottom.fit
+    op: eq
+    value: tight
+effect: penalty
+score_impact:
+  dimension: D3
+  delta: -2.0
+explain_template: 上装与下装都是紧身版型，整身缺少呼吸感。
+evidence_fields:
+- garment.top.fit
+- garment.bottom.fit
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-PROP-003
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-PROP-003
+    expect: miss
+  - case_id: neg-02
+    fixture: R-PROP-003
+    expect: miss
+suggestion_template: 把下装换成常规或直筒版型，或把上装换成宽松针织、衬衫。

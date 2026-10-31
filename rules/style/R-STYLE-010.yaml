@@ -1,0 +1,32 @@
+rule_id: R-STYLE-010
+version: 1
+category: STYLE
+title: 三件同源
+severity: boost
+scope: outfit
+condition:
+  field: outfit.style.profile_garment_count
+  op: gte
+  value: 3
+effect: bonus
+score_impact:
+  dimension: D2
+  delta: 3.0
+explain_template: '{outfit.style.profile_garment_count} 件单品同属 {ctx.top_style_cn} 方向，整套风格非常统一。'
+evidence_fields:
+- outfit.style.profile_garment_count
+- ctx.top_style_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-010
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-010
+    expect: miss
+reinforce_template: 这个统一度可以保留：换季时优先在同一风格里替换单品。

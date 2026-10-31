@@ -1,0 +1,37 @@
+rule_id: R-DET-003
+version: 1
+category: DETAIL
+title: 季节材质冲突
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.materials.has_summer_fabric
+    op: is_true
+  - field: outfit.materials.has_winter_item
+    op: is_true
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -3.0
+explain_template: 同一套搭配里同时出现夏季轻薄材质和冬季保暖材质，季节感冲突。
+evidence_fields:
+- outfit.materials.has_summer_fabric
+- outfit.materials.has_winter_item
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-003
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-003
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-003
+    expect: miss
+suggestion_template: 把冬装换成同功能的薄款，或把夏装换成同色系的秋冬材质。

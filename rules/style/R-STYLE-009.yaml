@@ -1,0 +1,39 @@
+rule_id: R-STYLE-009
+version: 1
+category: STYLE
+title: 画像内探索
+severity: boost
+scope: outfit
+condition:
+  all:
+  - field: derived.cosine_uv
+    op: between
+    value:
+    - 0.6
+    - 0.75
+  - field: outfit.style.explore_overlap_count
+    op: gte
+    value: 1
+effect: bonus
+score_impact:
+  dimension: D2
+  delta: 3.0
+explain_template: 这套搭配与你的风格相似度为 {derived.cosine_uv}，同时用到了你想尝试的 {outfit.style.explore_tags|list}。
+evidence_fields:
+- derived.cosine_uv
+- outfit.style.explore_overlap_count
+- outfit.style.explore_tags
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 60
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-009
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-009
+    expect: miss
+reinforce_template: 这个尝试可以保留：先把新元素放在配饰或单件单品上，主体仍沿用常穿风格。

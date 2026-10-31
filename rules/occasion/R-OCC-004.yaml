@@ -1,0 +1,38 @@
+rule_id: R-OCC-004
+version: 1
+category: OCCASION
+title: 正式度过剩
+severity: soft
+scope: outfit
+condition:
+  field: derived.formality_gap
+  op: gt
+  value: 0.25
+effect: penalty
+score_impact:
+  dimension: D4
+  delta: -3.0
+explain_template: 正式度 {outfit.formality} 高于{ctx.occasion_cn}所需的 {outfit.occasion.required_formality}，用力过猛。
+evidence_fields:
+- derived.formality_gap
+- outfit.formality
+- outfit.occasion.required_formality
+- ctx.occasion_cn
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-OCC-004
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-OCC-004
+    expect: miss
+  - case_id: neg-02
+    fixture: R-OCC-004
+    expect: miss
+mutex_group: OCC_FORMALITY
+suggestion_template: 把西装外套换成针织开衫，或把正装鞋换成休闲款。

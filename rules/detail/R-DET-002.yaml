@@ -1,0 +1,42 @@
+rule_id: R-DET-002
+version: 1
+category: DETAIL
+title: 正式约会场合无配饰
+severity: soft
+scope: outfit
+condition:
+  all:
+  - field: outfit.occasion
+    op: in
+    value:
+    - formal
+    - date
+  - field: outfit.structure.accessory_count
+    op: eq
+    value: 0
+effect: penalty
+score_impact:
+  dimension: D5
+  delta: -3.0
+explain_template: 正式或约会场合没有任何配饰收口，整体少了完成度。
+evidence_fields:
+- outfit.occasion
+- outfit.structure.accessory_count
+source: domain_expert
+status: active
+suppresses:
+- R-DET-006
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-DET-002
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-DET-002
+    expect: miss
+  - case_id: neg-02
+    fixture: R-DET-002
+    expect: miss
+suggestion_template: 加一对金属耳饰或一条细腰带，与鞋扣的颜色保持一致。

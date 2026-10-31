@@ -1,0 +1,35 @@
+rule_id: R-STYLE-006
+version: 1
+category: STYLE
+title: 正式度跨度冲突
+severity: soft
+scope: outfit
+condition:
+  field: outfit.formality_span
+  op: gt
+  value: 0.5
+effect: penalty
+score_impact:
+  dimension: D2
+  delta: -4.0
+explain_template: 整身单品的正式度跨度达到 {outfit.formality_span}，正式程度差了一个档位以上。
+evidence_fields:
+- outfit.formality_span
+- outfit.formality
+source: domain_expert
+status: active
+suppresses: []
+render_priority: 50
+test_cases:
+  positive:
+  - case_id: pos-01
+    fixture: R-STYLE-006
+    expect: hit
+  negative:
+  - case_id: neg-01
+    fixture: R-STYLE-006
+    expect: miss
+  - case_id: neg-02
+    fixture: R-STYLE-006
+    expect: miss
+suggestion_template: 把最极端的单品换成靠近主基调的款式，或加一件中间正式度的外套做过渡。

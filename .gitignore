@@ -13,3 +13,7 @@ venv/
 # 演示产物
 eval/report.json
 *.log
+
+# 临时脚本
+.tmp_*
+.screenshots/
