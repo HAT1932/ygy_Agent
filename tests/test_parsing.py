@@ -26,6 +26,7 @@ from src.parsing import (
     get_parser,
 )
 from src.parsing.base import normalize_occasion, normalize_season
+from PIL import Image
 
 ENV_KEYS = ("DASHSCOPE_API_KEY", "OFFLINE_MODE", "DEEPSEEK_API_KEY")
 
@@ -216,7 +217,12 @@ def _vlm_json() -> str:
     }, ensure_ascii=False)
 
 
-def test_qwen_payload_contract(monkeypatch):
+def test_qwen_payload_contract(monkeypatch, tmp_path):
+    """契约：请求体字段、URL、鉴权头必须符合 docs/05 §10。
+
+    注意：解析前现在会**先解码图片**（为了人形裁剪与 token 压缩），所以必须给一张
+    真实可解码的 PNG；HEIC/损坏文件会被判 IMAGE_UNDECODABLE 并降级 mock。
+    """
     captured: dict = {}
 
     def fake_post(url, headers=None, json=None, timeout=None):  # noqa: A002
@@ -226,10 +232,13 @@ def test_qwen_payload_contract(monkeypatch):
         return _FakeResponse(200, "```json\n" + _vlm_json() + "\n```")
 
     monkeypatch.setattr(httpx, "post", fake_post)
+    monkeypatch.setenv("PERSON_CROP_BACKEND", "none")   # 本用例只验请求体，不额外建连
+    img = tmp_path / "outfit.png"
+    Image.new("RGB", (64, 96), "#1F2A44").save(img)
     settings = Settings(dashscope_api_key="sk-test", offline_mode=False,
                         vlm_model="qwen3.7-plus")
     parser = QwenVLMParser(settings=settings)
-    result = parser.parse_outfit(["https://example.test/a.jpg"], "business", "autumn")
+    result = parser.parse_outfit([str(img)], "business", "autumn")
 
     payload = captured["payload"]
     assert captured["url"].endswith("/compatible-mode/v1/chat/completions")
@@ -256,9 +265,10 @@ def test_qwen_retries_once_then_falls_back_to_mock(monkeypatch, tmp_path):
         return _FakeResponse(500, "boom")
 
     monkeypatch.setattr(httpx, "post", failing_post)
-    # 必须给「可解析为真实图片」的 ref，否则会命中 fast-fail 守卫而不发请求
+    monkeypatch.setenv("PERSON_CROP_BACKEND", "none")   # 只验重试次数，排除裁剪的额外调用
+    # 必须是**真实可解码**的图片：假 PNG 头会被判 IMAGE_UNDECODABLE 而不发请求
     img = tmp_path / "outfit.png"
-    img.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 64)
+    Image.new("RGB", (64, 96), "#1F2A44").save(img)
     settings = Settings(dashscope_api_key="sk-test", offline_mode=False)
     result = QwenVLMParser(settings=settings).parse_outfit(
         [str(img)], "date", "summer")

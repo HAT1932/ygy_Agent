@@ -29,6 +29,14 @@ from .base import BaseParser, ParseResult, normalize_occasion, normalize_season
 from .mock import MockParser
 
 MAX_IMAGE_REFS = 5
+
+
+def _to_data_uri(img) -> str:
+    """PIL 图像 → data URI（统一走 PNG，避免 JPEG 二次压缩损失颜色精度）。"""
+    import io as _io
+    buf = _io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 DEFAULT_TIMEOUT_S = 30.0
 
 _SYSTEM_PROMPT = """你是服装搭配解析器。只输出一个 JSON 对象，不要输出任何解释、Markdown 或代码块。
@@ -173,6 +181,10 @@ class QwenVLMParser(BaseParser):
         # 人形检测 + 主体裁剪：把整张图换成「主要人物的干净裁剪」再送模型。
         # 解决两个实测问题：多人/背景干扰，以及"人不在画面里还硬打分"。
         crop_refs, crop_warnings, quality, vis_emb = self._prepare_subjects(fetchable)
+        if not crop_refs:
+            # 所有图片都无法解码（HEIC / 损坏 / 失效链接）→ 不能把坏字节发给模型
+            return self._fallback_result(refs, occasion, season,
+                                         "VLM_NO_DECODABLE_IMAGE_FALLBACK_MOCK")
 
         payload = self.build_payload(crop_refs, occasion, season)
         last_error: str | None = None
@@ -222,7 +234,8 @@ class QwenVLMParser(BaseParser):
         供 pipeline 的 assessability 门控使用 —— 证据不足时不下强判断。
         视觉 embedding 来自 FashionCLIP（多图取均值），供双塔替换哈希后端。
         """
-        from .person_crop import crop_main_subject, load_image as _load, quality_score
+        from .person_crop import (crop_main_subject, fit_for_vlm, image_tokens_estimate,
+                                  load_image as _load, quality_score)
 
         mode = (os.getenv("PERSON_CROP_BACKEND") or "auto").lower()
         out_refs: list[str] = []
@@ -240,30 +253,30 @@ class QwenVLMParser(BaseParser):
                 embeddings.append(vec)
 
         for ref in refs:
+            source = _load(ref)
+            if source is None:
+                # HEIC / 损坏 / 404：不能假装能解析，丢弃并记录（否则会把坏字节发给模型）
+                warnings.append(f"IMAGE_UNDECODABLE:{str(ref)[-40:]}")
+                continue
+
             if mode == "none":
-                out_refs.append(ref)
-                img = _load(ref)
-                if img is not None:
-                    _embed(img)
+                prepared = fit_for_vlm(source)
+                warnings.append(f"IMAGE_TOKENS:{image_tokens_estimate(prepared)}")
+                _embed(prepared)
                 qualities.append(1.0)
+                out_refs.append(_to_data_uri(prepared))
                 continue
 
             cropped, info = crop_main_subject(ref, self.settings, backend=mode)
             warnings.extend(f"SUBJECT:{w}" for w in info.warnings)
             qualities.append(quality_score(info))
-            img = cropped if cropped is not None else _load(ref)
-            if img is not None:
-                _embed(img)
-            if cropped is None:
-                out_refs.append(ref)
-                continue
-            import base64 as _b64
-            import io as _io
-            buf = _io.BytesIO()
-            cropped.save(buf, format="PNG")
-            out_refs.append("data:image/png;base64," + _b64.b64encode(buf.getvalue()).decode())
-            warnings.append(f"SUBJECT_CROPPED:{info.backend}:"
-                            f"area={info.subject_area_ratio}:full_body={info.is_full_body}")
+            prepared = fit_for_vlm(cropped if cropped is not None else source)
+            warnings.append(f"IMAGE_TOKENS:{image_tokens_estimate(prepared)}")
+            _embed(prepared)
+            out_refs.append(_to_data_uri(prepared))
+            if cropped is not None:
+                warnings.append(f"SUBJECT_CROPPED:{info.backend}:"
+                                f"area={info.subject_area_ratio}:full_body={info.is_full_body}")
 
         quality = min(qualities) if qualities else 1.0
         warnings.append(f"SUBJECT_QUALITY:{quality}")

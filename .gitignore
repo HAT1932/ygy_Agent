@@ -21,3 +21,8 @@ eval/report.json
 # 模型权重（可通过 scripts/fetch_fashionclip.py 重新下载）
 models/
 *.part
+
+# 你自己的测试照片（不上传、不入库）
+assets/my-photos/*
+!assets/my-photos/README.md
+

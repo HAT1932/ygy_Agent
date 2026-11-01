@@ -297,6 +297,28 @@ def crop_main_subject(ref: str, settings, *, backend: str | None = None,
     return cropped, info
 
 
+def fit_for_vlm(img: Image.Image, max_side: int | None = None) -> Image.Image:
+    """把图缩到「长边 ≤ max_side」，控制 image token 成本。
+
+    为什么必须做：Qwen 按 32×32 像素切 token，一张 3024×4032 的手机照片
+    ≈ (3024/32)×(4032/32) ≈ **11,900 image tokens**，是 640² 的 30 倍 —— 又慢又贵。
+    长边 1024 时约 (1024/32)×(768/32) ≈ 768 tokens，画质对服装识别足够。
+    """
+    limit = int(max_side or os.getenv("VLM_MAX_SIDE") or 1024)
+    w, h = img.size
+    if max(w, h) <= limit:
+        return img
+    scale = limit / max(w, h)
+    return img.resize((max(1, int(round(w * scale))), max(1, int(round(h * scale)))),
+                      Image.LANCZOS)
+
+
+def image_tokens_estimate(img: Image.Image) -> int:
+    """按 Qwen 的 32×32 像素/token 规则估算 image token（用于成本预警）。"""
+    w, h = img.size
+    return max(1, (w + 31) // 32) * max(1, (h + 31) // 32)
+
+
 def quality_score(info: SubjectInfo) -> float:
     """把输入质量折成 0..1，供 pipeline 的 assessability 门控使用。
 
