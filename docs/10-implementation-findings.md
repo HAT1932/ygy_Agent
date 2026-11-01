@@ -492,6 +492,70 @@ B 真实图片 : data_source=vlm    total=47.2   verdict=unsuitable   ← 真实
 
 ---
 
+## F-14 · 带引号的路径 → 又一次静默降级（实测用户真实踩坑）
+
+### 现象
+
+用户按「复制文件地址」粘贴：
+
+```
+"E:\Chuang_Yi_skill\user_picture\1.jpg"
+```
+
+告警：`VLM_SKIPPED_NO_FETCHABLE_IMAGE_FALLBACK_MOCK:refs=1:sample="E:\...\1.jpg"`
+
+**引号成了字符串的一部分** → `Path('"E:\...\1.jpg"').is_file()` 恒为 False →
+5 张真实照片全被判"不是图片" → 又一次静默降级 mock。
+
+### 根因
+
+`_clean_refs` 只做了 `str(r).strip()`，没有处理引号。而 Windows 资源管理器
+「复制文件地址」默认就带双引号——这是最常见的粘贴方式，不是边缘 case。
+
+### 已修
+
+`BaseParser.normalize_ref` 统一归一化：
+
+| 输入形态 | 输出 |
+|---|---|
+| `"E:\a\1.jpg"` / `'E:\a\2.jpg'` / `“E:\a\7.jpg”` | 去引号 |
+| `  E:\a\2.jpg  ` | 去首尾空白 |
+| `file:///E:/a/5.jpg` | 去协议前缀 |
+| `""E:/a/6.jpg""` | 最多剥 3 层 |
+
+回归测试 8 条参数化 + 带引号真实文件的端到端断言。实测用户 5 张照片：
+`data_source=vlm`、5/5 拿到视觉向量、无降级告警。
+
+---
+
+## F-15 · `str(Verdict.suitable)` 是 `'Verdict.suitable'`，判定词静默退化成「一般」
+
+### 现象
+
+报告里 `verdict=suitable`，但总评写「这套搭配得 76 分（**一般**）」。
+
+### 根因
+
+`Verdict` 是 `(str, Enum)`，Python 的 `Enum.__str__` 返回 `'Verdict.suitable'`，
+**不是** `'suitable'`；而 `.value` 才是 `'suitable'`。
+任何 `VERDICT_CN.get(str(verdict))` 的查表都会落空 → 默认值「一般」。
+
+同一根源还导致：`llm.py` 曾把枚举直接当 `verdict_cn` 传给模型，
+模型于是写出「判定为 suitable」（详见 F-13 的修复）。
+
+### 已修
+
+新增 `templates.verdict_key(value)`：优先取 `.value`，兼容 `'Verdict.xxx'` 字符串，`None` → `neutral`。
+`build_summary` / `check_facts` / `llm._build_payload` 全部改用它；
+并加 `sanitize_verdict_terms()` 兜底替换模型输出里的英文枚举（长词优先）。
+
+实测：`verdict=suitable` 且总评「判定为适合」，一致。
+
+> **教训（可复用）**：`(str, Enum)` 混血类型的 `str()` 与 `.value` 不等价。
+> 只要是拿枚举去查表/拼字符串，就必须显式 `.value`，或写一个 `xxx_key()` 收口。
+
+---
+
 ## 附：实现与文档的偏差清单（已接受）
 
 | # | 偏差 | 理由 |

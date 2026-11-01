@@ -40,9 +40,9 @@ def llm_ready(settings: Settings | None = None) -> bool:
 
 def _build_payload(reference_summary: str, ctx: dict[str, Any],
                    hint: str | None, settings: Settings) -> dict[str, Any]:
-    from .templates import VERDICT_CN
+    from .templates import VERDICT_CN, verdict_key
 
-    raw_verdict = str(ctx.get("verdict") or "neutral")
+    raw_verdict = verdict_key(ctx.get("verdict"))
     context = {
         # 必须映射成中文判定词：直接传枚举会让模型写出 "判定为 suitable"（实测踩过）
         "verdict_cn": VERDICT_CN.get(raw_verdict, "一般"),

@@ -244,7 +244,7 @@ def build_summary(ctx: dict[str, Any], suggestions: list[Suggestion] | None = No
     if suggestions is None:
         suggestions = build_suggestions(ctx)
     score = _fmt_score(_get(ctx, "total_score", 0.0))
-    verdict = str(_get(ctx, "verdict", "neutral") or "neutral")
+    verdict = verdict_key(_get(ctx, "verdict", "neutral"))
     verdict_cn = VERDICT_CN.get(verdict, "一般")
     parts: list[str] = [f"这套搭配得 {score} 分（{verdict_cn}）。"]
 
@@ -322,6 +322,22 @@ def _allowed_color_terms(ctx: dict[str, Any]) -> set[str]:
     return allowed
 
 
+def verdict_key(value: Any) -> str:
+    """把 Verdict 枚举/字符串统一取成**枚举值**。
+
+    坑：``Verdict`` 是 ``(str, Enum)``，``str(Verdict.suitable)`` 得到
+    ``'Verdict.suitable'`` 而不是 ``'suitable'``。任何走 ``str()`` 的查表都会落空，
+    导致判定词静默退化成「一般」（实测踩过，见 docs/10 F-15）。
+    """
+    if value is None:
+        return "neutral"
+    raw = getattr(value, "value", None)
+    if isinstance(raw, str):
+        return raw
+    text = str(value)
+    return text.rsplit(".", 1)[-1] if text.startswith("Verdict.") else text
+
+
 def sanitize_verdict_terms(text: str) -> str:
     """把中文稿里泄漏的英文枚举判定词替换成中文。
 
@@ -368,7 +384,7 @@ def check_facts(text: str, ctx: dict[str, Any],
         if word in polished:
             violations.append(f"SUBJECTIVE:{word}")
 
-    actual_verdict = VERDICT_CN.get(str(_get(ctx, "verdict", "") or ""), "")
+    actual_verdict = VERDICT_CN.get(verdict_key(_get(ctx, "verdict", "")), "")
     for verdict_cn in VERDICT_CN.values():
         if verdict_cn in polished and verdict_cn != actual_verdict:
             violations.append(f"VERDICT_MISMATCH:{verdict_cn}")
