@@ -452,6 +452,44 @@ def test_suppression_drops_less_specific_rule(engine: RuleEngine) -> None:
     assert "R-COLOR-009" not in ids  # 被更具体的图案混用压制
 
 
+def test_casual_outfit_is_not_told_to_remove_a_suit(engine: RuleEngine) -> None:
+    """真实事故回归（F-17）：薄荷绿连帽卫衣被判「正式度过剩」，建议里出现"西装"。
+
+    根因是 formality 方向没定义（卫衣被标 5 → 归一化成 0.82），再叠加
+    R-OCC-004 的模板写死了「把西装外套换成针织开衫」。
+    两道保险一起测：① 休闲搭配不得触发"正式度过剩"；② 模板不得假设具体单品。
+    """
+    case = {
+        "outfit": {
+            "occasion": "casual", "season": "unknown",
+            "items": [
+                {"slot": "upper", "category": "连帽卫衣", "material": "棉",
+                 "colors": [{"hex": "#A0E6DA"}], "style_tags": ["甜酷"],
+                 "attrs": {"formality": 0.25, "area_ratio": 0.3}},
+                {"slot": "lower", "category": "短裤", "material": "棉",
+                 "colors": [{"hex": "#1A1A1A"}], "style_tags": ["甜酷"],
+                 "attrs": {"formality": 0.25, "area_ratio": 0.2}},
+                {"slot": "shoes", "category": "乐福鞋", "material": "皮革",
+                 "colors": [{"hex": "#000000"}], "style_tags": [],
+                 "attrs": {"formality": 0.25, "area_ratio": 0.1}},
+            ],
+        },
+        "features": {"style_cosine": 0.6, "occasion_fit_prob": 0.8},
+        "structure": {"visual_waist_y": 0.5, "visual_center_y": 0.52,
+                      "is_tucked": False, "hem_pooling": False},
+        "profile": {"top_styles": ["甜酷"], "forbidden_styles": [],
+                    "explore_tags": [], "n_ref": 5},
+    }
+    outfit, profile, features = build_case(case, "casual-no-suit")
+    hits = engine.run(outfit, profile, features)
+    ids = [hit.rule_id for hit in hits]
+    assert "R-OCC-004" not in ids, [h.evidence for h in hits if h.rule_id == "R-OCC-004"]
+
+    rule = next(r for r in engine.rules if r.rule_id == "R-OCC-004")
+    assert "西装外套" not in rule.suggestion_template
+    assert "降一档正式度" in rule.suggestion_template
+
+
 def test_suppression_uses_more_severe_style_rule(engine: RuleEngine) -> None:
     fixture = load_fixture("R-STYLE-005")
     case = next(case for case in fixture["cases"] if case["expect"] == "hit")

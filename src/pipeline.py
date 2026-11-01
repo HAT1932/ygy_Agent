@@ -18,6 +18,7 @@ import numpy as np
 
 from .config import get_settings
 from .contracts import (
+    CONTRACT_VERSION,
     Anchor,
     CreateProfileResponse,
     DimensionCode,
@@ -542,7 +543,10 @@ class DemoService:
     def health(self) -> dict:
         providers = {"vlm": self.settings.vlm_model if self.settings.vlm_ready else "mock",
                      "llm": self.settings.llm_model if self.settings.llm_ready else "template",
-                     "embedding": self.settings.embedding_mode}
+                     "embedding": self.settings.embedding_mode,
+                     # 进程自报身份：改完代码没重启时，这里仍会显示旧版本号，
+                     # 是"我到底跑的是不是新代码"最快的一个判据。
+                     "contract": CONTRACT_VERSION}
         try:
             count = len(self.rules)
         except Exception:

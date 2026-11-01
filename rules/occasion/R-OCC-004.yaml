@@ -35,4 +35,9 @@ test_cases:
     fixture: R-OCC-004
     expect: miss
 mutex_group: OCC_FORMALITY
-suggestion_template: 把西装外套换成针织开衫，或把正装鞋换成休闲款。
+# 原来写死了「把西装外套换成针织开衫，或把正装鞋换成休闲款」——这条模板假设
+# 用户穿的是西装，但规则只看到"正式度过剩"。实测：一件薄荷绿连帽卫衣因为
+# formality 被误标成 5（方向没定义，F-17），就被建议"把西装外套换成针织开衫"，
+# 用户以为系统把卫衣识别成了西装。
+# 建议必须**不假设具体单品**，也不能用「那件」这类指代（lint: TPL_PRONOUN_AMBIGUOUS）。
+suggestion_template: 整体降一档正式度：外套换针织开衫、皮鞋换运动鞋、西裤换牛仔裤。
