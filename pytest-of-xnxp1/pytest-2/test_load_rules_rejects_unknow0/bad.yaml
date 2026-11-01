@@ -1,0 +1,22 @@
+rule_id: R-COLOR-777
+category: COLOR
+title: 未知字段
+severity: soft
+scope: outfit
+condition:
+  field: outfit.colors.not_a_field
+  op: gte
+  value: 1
+effect: penalty
+score_impact:
+  dimension: D1
+  delta: -2.0
+explain_template: 这套搭配有未知问题。
+suggestion_template: 把下装换成直筒版型。
+evidence_fields:
+- outfit.colors.not_a_field
+test_cases:
+  positive:
+  - fixture: x
+  negative:
+  - fixture: y

@@ -1,13 +1,33 @@
-# 运行时依赖（AMD64 / Python 3.13 验证）
+# AI 穿搭顾问 · 运行时依赖
+# 验证环境：Windows 10/11 AMD64 · Python 3.13.5 · 纯 CPU（不需要 GPU / 不需要 torch）
+#
+# 安装：
+#   python -m venv .venv
+#   .venv\Scripts\python -m pip install -U pip
+#   .venv\Scripts\python -m pip install -r requirements.txt
+#
+# 一键完成（推荐）：
+#   powershell -ExecutionPolicy Bypass -File scripts\setup_env.ps1
+
+# ---- Web 服务 ----
 fastapi==0.140.7
 uvicorn[standard]==0.49.0
 pydantic==2.13.4
 pydantic-settings==2.6.1
+
+# ---- 数据/图像 ----
 PyYAML==6.0.2
 numpy==2.1.3
+Pillow==11.1.0
 httpx==0.28.1
 
-# 评测/测试
+# ---- 视觉编码（FashionCLIP 走 ONNX，刻意不装 torch：省 250MB 依赖与 2GB 内存）----
+onnxruntime==1.31.1
+
+# ---- 评测/测试 ----
 pytest==9.1.1
 pytest-asyncio==1.4.0
 scipy==1.15.3
+
+# ---- 可选：iPhone HEIC 照片直读（不装的话 HEIC 会被判 IMAGE_UNDECODABLE）----
+# pillow-heif==0.21.0

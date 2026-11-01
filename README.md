@@ -1,4 +1,4 @@
-﻿# AI 穿搭顾问 Agent — 设计与选型文档集
+# AI 穿搭顾问 Agent — 设计与选型文档集
 
 > 面向「每天都要决定穿什么」的高频刚需人群，用 **多模态大模型 + 千条规则引擎** 做「千人千面、可解释」的穿搭评审。
 >
@@ -11,16 +11,40 @@
 
 ## 快速开始（30 秒跑起来）
 
+### 第 0 步：激活环境（只有第一次需要建）
+
+推荐用项目内虚拟环境，不污染 Anaconda base：
+
+```powershell
+cd E:\Chuang_Yi_skill
+
+# 一键建环境 + 装依赖（可选加 -SkipModels 跳过 606MB 视觉权重）
+powershell -ExecutionPolicy Bypass -File scripts\setup_env.ps1
+
+# 激活（每次开新终端都要做一次）
+.\.venv\Scripts\Activate.ps1
+```
+
+其他终端的激活方式：
+
+| 终端 | 命令 |
+|---|---|
+| PowerShell | `.\.venv\Scripts\Activate.ps1` |
+| cmd.exe | `.venv\Scripts\activate.bat` |
+| Git Bash / WSL | `source .venv/Scripts/activate` |
+| VS Code | `Ctrl+Shift+P` → *Python: Select Interpreter* → 选 `.venv` |
+| **不想激活** | 直接用完整路径：`.\.venv\Scripts\python.exe run.py --online` |
+
+> 若 `Activate.ps1` 报"禁止运行脚本"，用
+> `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` 临时放开（仅当前窗口）。
+
+### 第 1 步：配 key 并启动
+
 ```bash
-pip install -r requirements.txt
-
-# 离线模式（无 key 也能全链路演示：mock 解析 + 模板文案）
-python run.py --offline
+cp .env.example .env        # 填 DASHSCOPE_API_KEY / DEEPSEEK_API_KEY
+python run.py --online      # 真实 VLM + LLM
+python run.py --offline     # 无 key 也能全链路演示：mock 解析 + 模板文案
 #   → 前端 http://127.0.0.1:8000/     API 文档 /docs     健康检查 /v1/health
-
-# 在线模式（用 .env 里的 key 调真实 VLM + LLM）
-cp .env.example .env      # 填入 DASHSCOPE_API_KEY / DEEPSEEK_API_KEY
-python run.py --online
 ```
 
 **用真实图片演示**（已经内置 4 张示意图，也可换成真人穿搭照）：
