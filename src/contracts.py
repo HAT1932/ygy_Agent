@@ -1,4 +1,4 @@
-"""契约层 —— 全系统唯一的数据形状定义（FROZEN）。
+﻿"""契约层 —— 全系统唯一的数据形状定义（FROZEN）。
 
 来源：docs/00-baseline.md（v0.2）§5/§6/§8 与 docs/04-api-and-data-contract.md。
 改动本文件必须同步 docs/04 并 bump CONTRACT_VERSION；其他模块不得自定义重复结构。
@@ -20,7 +20,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
-CONTRACT_VERSION = "1.1.0"
+CONTRACT_VERSION = "1.2.0"
 RULESET_VERSION = "rs-2026.10.2"
 
 # --------------------------------------------------------------------------
@@ -204,6 +204,9 @@ class Outfit(BaseModel):
     image_ref: str | None = None
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     parse_warnings: list[str] = Field(default_factory=list)
+    # 真视觉 embedding（FashionCLIP 512 维，L2 归一化）；为空则双塔回退哈希后端。
+    # 这是过渡字段：有了它，160 维「伪视觉」哈希才能被真视觉语义替换（docs/10 F-10）。
+    image_embedding: list[float] | None = None
 
     def by_slot(self, slot: Slot) -> list[Garment]:
         return [g for g in self.items if g.slot == slot]

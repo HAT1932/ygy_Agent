@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import json
 import mimetypes
+import os
 from pathlib import Path
 from typing import Any
 
@@ -169,18 +170,111 @@ class QwenVLMParser(BaseParser):
             return self._fallback_result(refs, occasion, season,
                                          "VLM_SKIPPED_NO_FETCHABLE_IMAGE_FALLBACK_MOCK")
 
-        payload = self.build_payload(fetchable, occasion, season)
+        # 人形检测 + 主体裁剪：把整张图换成「主要人物的干净裁剪」再送模型。
+        # 解决两个实测问题：多人/背景干扰，以及"人不在画面里还硬打分"。
+        crop_refs, crop_warnings, quality, vis_emb = self._prepare_subjects(fetchable)
+
+        payload = self.build_payload(crop_refs, occasion, season)
         last_error: str | None = None
         for attempt in (1, 2):  # 失败重试 1 次（docs/03 §9.7.8 同类策略）
             try:
                 content = self._post(payload)
                 outfit, warnings = self._to_outfit(content, refs, occasion, season)
-                return ParseResult(outfit=outfit, warnings=warnings)
+                all_warnings = warnings + crop_warnings
+                all_warnings, quality = self._post_completeness(outfit, all_warnings, quality)
+                # parse_warnings 是规则引擎的输入（R-01），必须随 outfit 一起带出去，
+                # 否则 pipeline 的 assessability 门控读不到输入质量。
+                outfit = outfit.model_copy(update={
+                    "parse_warnings": [w for w in all_warnings if not w.startswith("SUBJECT_QUALITY:")]
+                    + [f"SUBJECT_QUALITY:{quality}"],
+                    "image_embedding": vis_emb,
+                })
+                return ParseResult(outfit=outfit, warnings=all_warnings)
             except Exception as exc:  # noqa: BLE001 - 任何失败都必须降级而不是抛给上层
                 last_error = f"attempt{attempt}:{type(exc).__name__}:{exc}"
 
         return self._fallback_result(refs, occasion, season,
                                      f"VLM_PARSE_FAILED_FALLBACK_MOCK:{last_error}")
+
+    def _post_completeness(self, outfit: Outfit, warnings: list[str],
+                           quality: float) -> tuple[list[str], float]:
+        """用**解析结果本身**校验输入是否被裁切（模型自评 full_body 不可信，见 docs/10）。
+
+        判据：画面裁到腰腿时，最典型的后果是"没有鞋"。此时降权，
+        让 assessability 门控把 D3/D5 降到阈值以下，而不是基于残缺信息给强判断。
+        """
+        slots = {g.slot for g in outfit.items}
+        has_shoes = Slot.shoes in slots
+        has_lower = Slot.lower in slots or Slot.dress in slots
+        if not has_lower:
+            warnings.append("INCOMPLETE_NO_LOWER_BODY")
+            quality *= 0.75
+        elif not has_shoes:
+            warnings.append("INCOMPLETE_NO_SHOES_MAYBE_CROPPED")
+            quality *= 0.80
+        return warnings, round(max(0.0, min(1.0, quality)), 3)
+
+    def _prepare_subjects(self, refs: list[str]
+                          ) -> tuple[list[str], list[str], float, list[float] | None]:
+        """对每个 ref 做主体裁剪，返回 (新 refs, 告警, 输入质量 0..1, 视觉 embedding)。
+
+        质量分进入 ``outfit.parse_warnings``（``SUBJECT_QUALITY:0.75``），
+        供 pipeline 的 assessability 门控使用 —— 证据不足时不下强判断。
+        视觉 embedding 来自 FashionCLIP（多图取均值），供双塔替换哈希后端。
+        """
+        from .person_crop import crop_main_subject, load_image as _load, quality_score
+
+        mode = (os.getenv("PERSON_CROP_BACKEND") or "auto").lower()
+        out_refs: list[str] = []
+        warnings: list[str] = []
+        qualities: list[float] = []
+        embeddings: list[list[float]] = []
+
+        from ..towers import visual as _visual
+
+        def _embed(img) -> None:
+            if not _visual.available():
+                return
+            vec = _visual.encode_image(img)
+            if vec is not None:
+                embeddings.append(vec)
+
+        for ref in refs:
+            if mode == "none":
+                out_refs.append(ref)
+                img = _load(ref)
+                if img is not None:
+                    _embed(img)
+                qualities.append(1.0)
+                continue
+
+            cropped, info = crop_main_subject(ref, self.settings, backend=mode)
+            warnings.extend(f"SUBJECT:{w}" for w in info.warnings)
+            qualities.append(quality_score(info))
+            img = cropped if cropped is not None else _load(ref)
+            if img is not None:
+                _embed(img)
+            if cropped is None:
+                out_refs.append(ref)
+                continue
+            import base64 as _b64
+            import io as _io
+            buf = _io.BytesIO()
+            cropped.save(buf, format="PNG")
+            out_refs.append("data:image/png;base64," + _b64.b64encode(buf.getvalue()).decode())
+            warnings.append(f"SUBJECT_CROPPED:{info.backend}:"
+                            f"area={info.subject_area_ratio}:full_body={info.is_full_body}")
+
+        quality = min(qualities) if qualities else 1.0
+        warnings.append(f"SUBJECT_QUALITY:{quality}")
+        vis_emb: list[float] | None = None
+        if embeddings:
+            import numpy as _np
+            mean = _np.mean(_np.asarray(embeddings, dtype=_np.float64), axis=0)
+            n = float(_np.linalg.norm(mean))
+            vis_emb = (mean / n).astype(float).tolist() if n > 0 else None
+            warnings.append(f"VISUAL_EMBEDDING:fashionclip:{len(embeddings)}")
+        return out_refs, warnings, quality, vis_emb
 
     def probe(self) -> dict[str, Any]:
         """CapabilityReport（docs/05 §10.2 要求运行时可知能力边界）。"""

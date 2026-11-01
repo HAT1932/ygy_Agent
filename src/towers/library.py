@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from PIL import Image, ImageDraw
 
 from ..contracts import Color, Garment, Outfit, RecallItem, Slot
 from ..utils import make_id
@@ -92,18 +93,96 @@ def load_library(path: Path | str | None = None) -> list[LibraryItem]:
     return items
 
 
+def _hex_of(garment) -> str:
+    try:
+        if garment is not None and garment.primary_color is not None:
+            return garment.primary_color.hex
+    except Exception:  # noqa: BLE001
+        pass
+    return "#CCCCCC"
+
+
+def render_outfit_image(outfit: Outfit, size: tuple[int, int] = (320, 480)) -> Image.Image:
+    """把结构化搭配渲染成「人穿着这套衣服」的示意图，用于给库条目算真视觉向量。
+
+    刻意与真人照片同模态（人物居中、浅色背景），让 FashionCLIP 的视觉空间可比。
+    这是**过渡方案**：生产环境应使用真实搭配图，而不是渲染图。
+    """
+    W, H = size
+    img = Image.new("RGB", (W, H), "#EFEFEF")
+    d = ImageDraw.Draw(img)
+    cx = W // 2
+    top = outfit.first(Slot.outer) or outfit.first(Slot.upper) or outfit.first(Slot.dress)
+    lower = outfit.first(Slot.lower) or outfit.first(Slot.dress)
+    shoes = outfit.first(Slot.shoes)
+    acc = outfit.first(Slot.accessory)
+
+    # 头 + 颈
+    d.ellipse([cx - 30, 26, cx + 30, 86], fill="#D9B99B")
+    d.rectangle([cx - 11, 80, cx + 11, 98], fill="#D9B99B")
+    # 躯干（上装/外套/连衣裙）
+    d.rectangle([cx - 70, 96, cx + 70, 240], fill=_hex_of(top))
+    d.rectangle([cx - 96, 100, cx - 70, 230], fill=_hex_of(top))
+    d.rectangle([cx + 70, 100, cx + 96, 230], fill=_hex_of(top))
+    # 下装（或连衣裙延伸）
+    lower_color = _hex_of(lower)
+    d.rectangle([cx - 58, 240, cx - 6, 400], fill=lower_color)
+    d.rectangle([cx + 6, 240, cx + 58, 400], fill=lower_color)
+    # 鞋
+    d.rectangle([cx - 64, 400, cx - 2, 436], fill=_hex_of(shoes))
+    d.rectangle([cx + 2, 400, cx + 64, 436], fill=_hex_of(shoes))
+    # 配饰（小色块，提示存在）
+    if acc is not None:
+        d.rectangle([cx - 18, 150, cx + 18, 196], fill=_hex_of(acc))
+    return img
+
+
 class LibraryIndex:
     """把搭配库编码进与用户塔同一向量空间，并提供 top-K 召回。"""
 
-    def __init__(self, items: list[LibraryItem], encoder) -> None:
+    def __init__(self, items: list[LibraryItem], encoder,
+                 allow_visual: bool = True) -> None:
         self.items = items
         self._by_id = {it.item_id: it for it in items}
         self._ids: list[str] = []
         self._mat: np.ndarray | None = None
+        self.visual_used = False
         if items:
-            vecs = [np.asarray(encoder.encode_outfit(it.outfit), dtype=np.float64) for it in items]
+            # 关键：只能与查询侧同后端。若查询侧拿不到视觉向量（离线/mock），
+            # 库里也必须是哈希，否则两侧不同源、cosine 无意义（docs/10 F-10）。
+            if allow_visual:
+                decorated = [self._with_visual(it) for it in items]
+                self.visual_used = all(it.outfit.image_embedding is not None for it in decorated)
+            else:
+                decorated = items
+            self.items = decorated
+            self._by_id = {it.item_id: it for it in decorated}
+            vecs = [np.asarray(encoder.encode_outfit(it.outfit), dtype=np.float64)
+                    for it in decorated]
             self._mat = np.vstack(vecs)
-            self._ids = [it.item_id for it in items]
+            self._ids = [it.item_id for it in decorated]
+
+    @staticmethod
+    def _with_visual(item: LibraryItem) -> LibraryItem:
+        """给库条目补真视觉 embedding（把属性渲染成「人穿着这套衣服」的示意图）。
+
+        为什么必须补：双塔要求两侧同空间。用户侧是真实人像（FashionCLIP 向量），
+        若库里只有哈希指纹，两边不同源，cosine 就没有可比性。
+        """
+        if item.outfit.image_embedding is not None:
+            return item
+        try:
+            from . import visual as _visual
+            if not _visual.available():
+                return item
+            vec = _visual.encode_image(render_outfit_image(item.outfit))
+            if vec is None:
+                return item
+            return LibraryItem(item_id=item.item_id, title=item.title,
+                               occasion=item.occasion, style_tags=item.style_tags,
+                               outfit=item.outfit.model_copy(update={"image_embedding": vec}))
+        except Exception:  # noqa: BLE001
+            return item
 
     def __len__(self) -> int:
         return len(self._ids)

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -80,20 +81,66 @@ def compute_assessability(outfit: Outfit, profile: StyleProfile) -> dict[str, fl
     # D5 细节：单品越多越能看出细节，配饰缺失会降低
     d5 = min(1.0, 0.5 + 0.15 * len(items) + (0.2 if outfit.by_slot(Slot.accessory) else 0.0))
 
+    # 输入质量（人形检测/主体裁剪的副产物）：多人、主体过小、疑似裁切、遮挡
+    # 会整体压低所有维度的评估信心 —— 这是 baseline R-01「证据不足不下判断」的落地。
+    # 注意：平铺摆拍图（无人物）只轻微降权（SUBJECT_QUALITY≈0.85），不算证据不足。
+    quality = _subject_quality(outfit)
+    if quality < 1.0:
+        d1, d2, d3, d4, d5 = (v * quality for v in (d1, d2, d3, d4, d5))
+
     return {d.value: round(v, 3) for d, v in
             ((DimensionCode.D1, d1), (DimensionCode.D2, d2), (DimensionCode.D3, d3),
              (DimensionCode.D4, d4), (DimensionCode.D5, d5))}
+
+
+def _subject_quality(outfit: Outfit) -> float:
+    """从 parse_warnings 里取裁剪器给出的输入质量（缺省 1.0，不惩罚）。"""
+    for w in (outfit.parse_warnings or []):
+        if isinstance(w, str) and w.startswith("SUBJECT_QUALITY:"):
+            try:
+                return max(0.0, min(1.0, float(w.split(":", 1)[1])))
+            except ValueError:
+                return 1.0
+    return 1.0
+
+
+def calibrate_style_cosine(raw: float, backend: str) -> float:
+    """把后端相关的余弦**归一到稳定口径**，让规则阈值与 embedding 后端解耦（F-03 方案 A）。
+
+    问题：同一对搭配，哈希后端给 0.30、FashionCLIP 给 0.79，而规则阈值（0.35 / 0.45–0.58）
+    是按哈希写死的 → 换后端即全部失效。
+
+    做法：为每个后端给一组"锚点"（同一套搭配的典型余弦 ↔ 明显不相关搭配的典型余弦），
+    把原始余弦线性映射到统一刻度上。规则永远只吃映射后的值。
+    """
+    if backend != "visual":
+        return max(-1.0, min(1.0, raw))
+    # 视觉后端锚点（实测：自身≈0.95，无关≈0.60；见 docs/10 F-10 的 7 图两两分布）
+    same, same_out = 0.95, 0.95
+    off, off_out = 0.62, 0.22
+    slope = (same_out - off_out) / (same - off)
+    mapped = off_out + (raw - off) * slope
+    return max(0.0, min(0.99, mapped))
+
+
+def _image_backend_of(encoder: Any) -> str:
+    try:
+        return str(encoder.manifest().get("last_image_backend") or "hash")
+    except Exception:  # noqa: BLE001
+        return "hash"
 
 
 def compute_features(outfit: Outfit, profile: StyleProfile, encoder: Any) -> Features:
     """组装 DSL 可引用、且 D2 需要的特征。全部确定性。"""
     pv = np.asarray(encoder.encode_profile(profile), dtype=np.float64)
     ov = np.asarray(encoder.encode_outfit(outfit), dtype=np.float64)
+    backend = _image_backend_of(encoder)
     if pv.size and ov.size:
         denom = float(np.linalg.norm(pv) * np.linalg.norm(ov))
-        cosine = float(np.dot(pv, ov) / denom) if denom else 0.0
+        raw_cosine = float(np.dot(pv, ov) / denom) if denom else 0.0
     else:
-        cosine = 0.0
+        raw_cosine = 0.0
+    cosine = calibrate_style_cosine(raw_cosine, backend)
 
     prim = [g.primary_color for g in outfit.items if g.primary_color is not None]
     hues = [c.hue for c in prim]
@@ -204,9 +251,14 @@ class DemoService:
     def library(self):
         """搭配库索引（双塔召回的候选池）。懒加载：只在首次生成 report 时编码。"""
         if self._library is None:
+            from .towers import visual as _visual
             from .towers.library import LibraryIndex, load_library
             items = load_library()
-            self._library = LibraryIndex(items, self.encoder)
+            # 两侧必须同后端：只有"解析侧确实能产出视觉向量"时才给库补视觉向量
+            allow_visual = bool(self.settings.vlm_ready and _visual.available()
+                               and (os.getenv("VISUAL_BACKEND") or "auto").lower()
+                               not in ("off", "hash", "0", "false"))
+            self._library = LibraryIndex(items, self.encoder, allow_visual=allow_visual)
         return self._library
 
     # ---------- 持久化（可选，演示用）----------

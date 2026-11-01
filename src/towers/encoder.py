@@ -40,6 +40,8 @@ from ..utils import canonical_json
 IMG_DIM: int = 160
 STRUCT_DIM: int = 96
 DIM: int = IMG_DIM + STRUCT_DIM  # 256
+# 真视觉后端的原始维度（FashionCLIP / CLIP ViT-B/32）
+VISUAL_RAW_DIM: int = 512
 ALPHA: float = 0.6
 BETA: float = 0.4
 PROJECTION_SEED: int = 20261031  # docs/02 §6.2.3
@@ -294,6 +296,28 @@ class TowerEncoder:
         self.raw_dim = STRUCT_RAW_DIM
         self._projection = _build_projection(self.raw_dim, self.struct_dim, self.seed)
         self._projection_sha = self._compute_projection_sha()
+        # 真视觉块：512 → img_dim 的固定投影（同 seed 族，可复现、可发布指纹）
+        self._visual_projection = _build_projection(VISUAL_RAW_DIM, self.img_dim,
+                                                   self.seed + 7919)
+        self._last_image_backend = "hash"
+        self.visual_enabled = self._resolve_visual()
+
+    def _resolve_visual(self) -> bool:
+        """是否启用真视觉后端：模型存在 + 未被环境变量强制关闭。"""
+        import os
+        mode = (os.getenv("VISUAL_BACKEND") or "auto").lower()
+        if mode in ("off", "hash", "0", "false"):
+            return False
+        if mode in ("on", "visual", "fashionclip"):
+            return True
+        from . import visual as _visual
+        return _visual.available()
+
+    @property
+    def visual_projection_sha256(self) -> str:
+        header = (f"seed={self.seed + 7919};raw_dim={VISUAL_RAW_DIM};"
+                  f"out_dim={self.img_dim}").encode("ascii")
+        return hashlib.sha256(header + b"|" + self._visual_projection.tobytes()).hexdigest()
 
     # -- 制品信息 ---------------------------------------------------------
     def _compute_projection_sha(self) -> str:
@@ -336,7 +360,20 @@ class TowerEncoder:
             "projection_seed": self.seed,
             "struct_raw_dim": self.raw_dim,
             "embedding_version": self.embedding_version,
+            # 图像块后端：visual = 真视觉（FashionCLIP ONNX），hash = 内容指纹回退。
+            # 放在 manifest 而非 config：config 的键集是契约固定项（B-06/B-11）。
+            "image_backend": "visual" if self.visual_enabled else "hash",
+            "visual_raw_dim": VISUAL_RAW_DIM,
+            "visual_projection_sha256": (self.visual_projection_sha256
+                                          if self.visual_enabled else None),
+            "last_image_backend": self._last_image_backend,
         })
+        if self.visual_enabled:
+            try:
+                from . import visual as _visual
+                data["visual_model"] = _visual.manifest()
+            except Exception:  # noqa: BLE001
+                pass
         return data
 
     def projection_matrix(self) -> np.ndarray:
@@ -348,8 +385,22 @@ class TowerEncoder:
         return _l2(self._projection @ x_struct)
 
     def encode_outfit(self, outfit: Outfit) -> list[float]:
-        """Outfit → 256 维 L2 归一化向量。确定性：只依赖 outfit 内容。"""
-        img = _hash_embedding(_signature(outfit), self.img_dim)
+        """Outfit → 256 维 L2 归一化向量。确定性：只依赖 outfit 内容。
+
+        图像块有两种后端（docs/10 F-10）：
+          · ``visual``：outfit 带 ``image_embedding``（FashionCLIP 512 维）→ 固定投影到 img_dim
+          · ``hash``  ：回退后端，用内容签名的 sha256 伪随机向量（无视觉语义，但零依赖可复现）
+        两者输出维度一致，所以上层无感；后端选择记在 :meth:`config` 里以便审计。
+        """
+        vec = outfit.image_embedding
+        if self.visual_enabled and vec is not None and len(vec) == VISUAL_RAW_DIM:
+            raw = _l2(np.asarray(vec, dtype=np.float64))
+            img = _l2(self._visual_projection @ raw)
+            backend = "visual"
+        else:
+            img = _hash_embedding(_signature(outfit), self.img_dim)
+            backend = "hash"
+        self._last_image_backend = backend
         struct = self._encode_struct(struct_features(outfit))
         combined = np.concatenate([
             self.alpha * _l2(img),

@@ -17,3 +17,7 @@ eval/report.json
 # 临时脚本
 .tmp_*
 .screenshots/
+
+# 模型权重（可通过 scripts/fetch_fashionclip.py 重新下载）
+models/
+*.part
