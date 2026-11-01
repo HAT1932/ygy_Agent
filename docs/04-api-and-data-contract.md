@@ -1653,6 +1653,18 @@ class EmbeddingConfig(BaseModel):
         return self
 
 
+class Diagnostic(BaseModel):
+    """人可读解析诊断（契约 1.3.0 / docs/10 F-16）。与 parse_warnings 并存，不替代。"""
+    model_config = ConfigDict(extra="forbid")
+    code: str                                   # 归并键：IMAGE_TOKENS / SUBJECT:OCCLUDED ...
+    severity: Literal["info", "warn", "error"]
+    label: str = ""                             # 中文一句话
+    detail: str = ""                            # 同 code 多条原始值聚合后的人话
+    impact: str = ""                            # 对分数/结论的影响（warn 必填）
+    count: int = 1                              # 原始告警出现次数
+    refs: list[int] = Field(default_factory=list)   # 归属的第几张（1-based）；空 = 全局
+
+
 class ReportMeta(BaseModel):
     model_config = ConfigDict(extra="forbid")
     ruleset_version: str
@@ -1665,6 +1677,8 @@ class ReportMeta(BaseModel):
     degraded_reasons: list[str]
     anchor_count: conint(ge=0, le=10)
     parse_warnings: list[str]
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    evidence_summary: str = ""
     detail_level: Literal["brief", "standard", "detailed"]
     generated_in_ms: conint(ge=0)
 
@@ -1954,3 +1968,4 @@ canonical_json:
 | v0.1 | 2026-10-31 | 初稿：通用约定（ULID/时间/精度/限流）、22 个错误码的统一错误模型与"错误 vs 降级"判定规则、异步任务协议（状态机/轮询/回调签名）、15 个端点详设（含与 03 算例 A 完全对应的 Report 示例）、Pydantic 契约（含 INV-1..INV-5 运行时守护）、Report JSON Schema 生成与 8 条 schema 约束 + 5 份黄金夹具、三层版本化与弃用流程、两层幂等键设计、8 条 baseline 修订建议 | tech-arch |
 | v0.2 | 2026-10-31 | 契约代码**已实测**（Pydantic 2.13 下 import 通过、正样本 `model_validate` 通过、9 个负样本全部被 validator 拦截）；修正 `rule_id` 正则（分类段为短码 → 新增 `CATEGORY_SHORT` 绑定与断言，并记入 B-26）；补 `OutfitMaterials` 模型与 7 个预计算聚合字段（对齐 03 §7.7）；`Report` 示例与 03 §5.1 算例 A 逐位对齐（78.79 → 78.8 / 7879 厘点）；`DimensionScore` 改用模块级 `DIMENSION_EXPECT`（避免 Pydantic 私有属性歧义）；`ReportOptions` 前置定义 | tech-arch |
 | v0.3 | 2026-10-31 | 与 05 号文档对齐：新增 `EmbeddingConfig` 模型与 `meta.embedding_config`（`alpha`/`beta`/`img_dim=160`/`struct_dim=96`/`projection_sha256`），并对 `img_dim + struct_dim == 256` 加断言；契约代码重新实测通过（1 正样本 + 9 负样本） | tech-arch |
+| v0.4 | 2026-11-01 | **`CONTRACT_VERSION` 1.2.0 → 1.3.0**（次版本，纯增量）：新增 `Diagnostic` 模型与 `ReportMeta.diagnostics` / `ReportMeta.evidence_summary`，画像与解析响应同步新增 `diagnostics` / `evidence_summary`。`parse_warnings` 语义与内容**完全不变**（仍是规则引擎输入），诊断只是它的人可读投影：分级（info/warn/error）、归属（`refs` = 第几张）、影响（`impact`）。动机见 docs/10 F-16：8 张参考产生约 30 条机器码告警被拼成一行，用户把「已缩放 token / 已裁主体 / 已提视觉向量」误读成"全都失败了" | tech-arch |

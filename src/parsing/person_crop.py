@@ -332,8 +332,13 @@ def quality_score(info: SubjectInfo) -> float:
         score -= 0.25
     if info.is_full_body is False:
         score -= 0.25
-    if (info.subject_area_ratio or 1.0) < MIN_SUBJECT_AREA_RATIO:
+    too_small = (info.subject_area_ratio or 1.0) < MIN_SUBJECT_AREA_RATIO
+    if too_small:
         score -= 0.30
+    elif any(w.startswith("CROP_UPSCALED") for w in info.warnings):
+        # 裁剪后短边 < MIN_SIDE_PX 被放大：细节已经糊了，但还没到"主体占比过小"的程度。
+        # 不罚会出漏洞：主体占比 10% 却只有 200px 的图，质量分仍是 1.0（docs/10 F-16）。
+        score -= 0.10
     if any(w.startswith("OCCLUDED") for w in info.warnings):
         score -= 0.15
     if info.bbox is None:

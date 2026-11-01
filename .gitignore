@@ -26,3 +26,6 @@ models/
 assets/my-photos/*
 !assets/my-photos/README.md
 
+
+# pytest 临时目录：本机 %TEMP% 不可写时 tempfile 会回退到 cwd（docs/10 环境备注）
+pytest-of-*/

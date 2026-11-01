@@ -351,6 +351,54 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
     }
   }
 
+  // ---------- 诊断渲染（docs/10 F-16）----------
+  // 原始告警是机器码，全拼成一行会让人以为"全都出错了"。这里分三层：
+  //   ① 证据质量一行：几张成功 / 有没有真视觉向量 / 几条待处理
+  //   ② 待处理（warn/error）—— 只有这些才该被叫作"告警"，标出第几张 + 对分数的影响
+  //   ③ 正常信息（info）—— 折叠，默认不打扰（缩放 token、已裁剪、已提向量）
+  var SEV = {
+    error: { color: "#a33a3a", bg: "#fdf2ef", bd: "#eed7d2", tag: "错误" },
+    warn: { color: "#a85b2b", bg: "#fdf7ee", bd: "#f1e2cb", tag: "待处理" },
+    info: { color: "#5b6b7c", bg: "#f6f8fa", bd: "#e3e8ee", tag: "信息" }
+  };
+
+  function diagRow(d) {
+    var s = SEV[d.severity] || SEV.info;
+    var refs = d.refs || [];
+    var where = !refs.length ? ""
+      : (refs.length >= 4 ? refs.length + " 张" : "第 " + refs.join("、") + " 张");
+    var det = [];
+    if (where) det.push(where);
+    if (d.detail) det.push(esc(d.detail));
+    return '<div class="evidence-row" style="background:' + s.bg + ";border:1px solid " + s.bd +
+      ';border-radius:6px;padding:6px 8px;margin-bottom:4px">' +
+      '<b style="color:' + s.color + '">' + esc(d.label) + "</b>" +
+      (det.length ? "<span>" + det.join(" · ") + "</span>" : "") +
+      (d.impact ? '<div class="small muted" style="flex-basis:100%;margin-top:2px">' +
+        esc(d.impact) + "</div>" : "") +
+      "</div>";
+  }
+
+  function renderDiagnostics(diags, summary) {
+    diags = diags || [];
+    if (!diags.length && !summary) return "";
+    var bad = diags.filter(function (d) { return d.severity !== "info"; });
+    var ok = diags.filter(function (d) { return d.severity === "info"; });
+    var html = summary
+      ? '<div class="small" style="margin-bottom:8px"><b>证据质量</b> · ' + esc(summary) + "</div>"
+      : "";
+    if (bad.length) {
+      html += '<div class="small muted" style="margin:2px 0 4px">需要处理或留意的（' +
+        bad.length + " 条）</div>" + bad.map(diagRow).join("");
+    }
+    if (ok.length) {
+      html += "<details" + (bad.length ? "" : " open") + "><summary>解析细节（" + ok.length +
+        ' 条，均属正常信息：缩放/裁剪/提向量）</summary><div class="body">' +
+        ok.map(diagRow).join("") + "</div></details>";
+    }
+    return html;
+  }
+
   function renderProfile(data) {
     var p = data.profile || {};
     var tags = (p.tags || []).map(function (t) {
@@ -364,10 +412,7 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
         esc(ids.join("、")) + "</span></div>";
     }).join("") : '<div class="evidence-row muted">暂无标签证据</div>';
 
-    var warnings = (data.warnings || []).concat(p.source_outfit_ids ? [] : []);
-    var warnHtml = warnings.length
-      ? '<div class="evidence-row" style="color:#a85b2b"><b>解析告警</b><span>' + esc(warnings.join("；")) + "</span></div>"
-      : "";
+    var diagHtml = renderDiagnostics(data.diagnostics, data.evidence_summary);
 
     var outfitRows = (data.outfits || []).slice(0, 10).map(function (o) {
       var styles = [];
@@ -386,7 +431,8 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
       '<span class="badge">参考 ' + esc(p.n_ref_outfits || 0) + " 套</span></div>" +
       '<div class="chips" style="margin-top:14px">' + (tags || '<span class="muted small">暂无风格标签</span>') + "</div>" +
       '<div class="evidence"><div class="small muted" style="margin-bottom:6px">标签证据（可回溯到具体参考穿搭）</div>' +
-      evRows + warnHtml + "</div>" +
+      evRows + "</div>" +
+      (diagHtml ? '<div class="evidence" style="margin-top:10px">' + diagHtml + "</div>" : "") +
       '<details><summary>参考穿搭明细（' + (data.outfits || []).length + " 套）</summary>" +
       '<div class="body">' + (outfitRows || '<span class="muted small">无</span>') + "</div></details>";
   }
@@ -489,6 +535,7 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
     }).join("") || '<div class="evidence-row muted">搭配库为空或未召回（检查 data/outfits.yaml）。</div>';
 
     var m = r.meta || {};
+    var diagBlock = renderDiagnostics(m.diagnostics, m.evidence_summary);
     var warnings = (m.parse_warnings || []).map(esc).join("；") || "无";
     var latency = m.latency_ms || {};
     var latStr = Object.keys(latency).map(function (k) { return k + " " + latency[k] + "ms"; }).join(" · ") || "—";
@@ -512,6 +559,7 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
         " · 置信度 " + fmt((r.confidence || 0) * 100, 0) + "% · 总分厘点 " +
         esc(r.total_centi) + "</div></div></div>" +
       '<div class="muted small" style="margin-top:6px">' + esc(r.summary || "") + "</div>" +
+      (diagBlock ? '<div class="evidence" style="margin-top:10px">' + diagBlock + "</div>" : "") +
       '<div class="bars">' + bars + "</div>" + topHtml +
       '<details open><summary>全部规则命中（' + hits.length + " 条）</summary><div class=\"body\">" +
         '<table><thead><tr><th style="width:26px">#</th><th>规则</th><th style="width:44px">维度</th>' +
@@ -532,7 +580,7 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
         row("解析模型", m.vlm_model) + row("文案模型", m.llm_model) +
         row("向量模型", m.embedding_model) + row("规则集版本", m.ruleset_version) +
         row("契约版本", m.contract_version) + row("渲染模式", m.render_mode) +
-        row("解析告警", warnings) + row("耗时", latStr) +
+        row("解析告警（原始机器码）", warnings) + row("耗时", latStr) +
       "</div></div></details>";
     $("reviewNotice").className = "notice";
   }

@@ -59,7 +59,7 @@ python scripts/make_sample_images.py        # 生成 assets/samples/*.png
 **验证与评测**：
 
 ```bash
-python -m pytest -q                        # 182 项测试
+python -m pytest -q                        # 213 项测试
 python eval/run_eval.py                    # 20 套标注评测集（Spearman / 追溯率 / 确定性）
 python scripts/rule_coverage_report.py     # 规则判别力体检（找出无区分度的规则）
 ```
@@ -67,17 +67,18 @@ python scripts/rule_coverage_report.py     # 规则判别力体检（找出无�
 | 已验证的事实 | 实测值 |
 |---|---|
 | 规则集 | 50 条，lint 0 error，COLOR 12 / STYLE 10 / PROP 10 / OCC 10 / DET 8（`rs-2026.10.2`） |
-| 测试 | **182 项全过**（契约/评分/解析/双塔/合成/规则/API） |
+| 测试 | **213 项全过**（契约/评分/解析/双塔/合成/规则/API/诊断） |
 | 评测（20 套） | Spearman **0.8557**（p=0.0000）、追溯率 **100%**、确定性 **100%**、`expected_gain` 全自洽 |
 | **双塔召回** | 用户塔 × 搭配塔（`data/outfits.yaml` **12 条候选库**）→ top-5，报告内可见 |
 | 分数分布 | 50 组扫描 **36.4 – 81.0**，四档 verdict 全部可达 |
 | 画像区分度 | 纯统计画像 **5.0 分**（FAIL）；声明偏好后 **8.0 分**（PASS，verdict 分歧 50%） |
 | 视觉编码 | **FashionCLIP**（ONNX，512 维；首次 2.9s，之后 **0.1s/张**，**不需要 torch**） |
 | 人形检测 | 主体裁剪 + 输入质量门（ONNX 检测器 / VLM grounding 双后端） |
+| 诊断分级 | 解析告警按 **info/warn/error** 分级 + 归属到「第几张」+ 给出对分数的影响（F-16） |
 | 真实 VLM | qwen3.7-plus，512² 图 = **258 image tokens**，≈11 s/图 |
 | 真实 LLM | deepseek-flash 润色，≈2.3 s，总评会引用规则证据（色相跨度/冷暖占比/同源度） |
 
-⚠️ **实现过程中发现的 9 个设计问题**（含「34% 规则无判别力」「评测集是合成的」「个性化需用户声明偏好」）记录在 **[10-implementation-findings](./docs/10-implementation-findings.md)**，上线前必须逐条处理。
+⚠️ **实现过程中发现的 16 个设计问题**（含「34% 规则无判别力」「评测集是合成的」「个性化需用户声明偏好」「静默降级成 mock」）记录在 **[10-implementation-findings](./docs/10-implementation-findings.md)**，上线前必须逐条处理。
 其中 F-01（上限不可达）已通过修误伤 + 复活死规则解决，未动 `base_score`；F-08（个性化）能力已就绪但必须引导用户填偏好。
 
 ---

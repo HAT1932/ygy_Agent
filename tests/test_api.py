@@ -206,6 +206,15 @@ class StubService:
     def get_profile(self, profile_id: str) -> StyleProfile | None:
         return self.profiles.get(profile_id)
 
+    # ---- 响应装配：复用 pipeline 的实现，避免两套格式化逻辑分叉（F-16）----
+    def profile_response(self, profile, outfits):  # noqa: ANN001, ANN201
+        from src.pipeline import build_profile_response
+        return build_profile_response(profile, outfits)
+
+    def parse_response(self, outfit, warnings):  # noqa: ANN001, ANN201
+        from src.pipeline import build_parse_response
+        return build_parse_response(outfit, warnings)
+
     def get_report(self, report_id: str) -> Report | None:
         return self.reports.get(report_id)
 
@@ -454,12 +463,21 @@ def test_real_pipeline_end_to_end() -> None:
     assert len(outfits) == 3
     assert profile.profile_id.startswith("prf_")
 
+    # F-16：离线/降级必须出 error 级诊断，而不是一句模糊的"解析告警"
+    resp = svc.profile_response(profile, outfits)
+    assert any(d.code == "FALLBACK_MOCK" and d.severity == "error"
+               for d in resp.diagnostics), [d.code for d in resp.diagnostics]
+    assert resp.evidence_summary
+
     report = svc.create_report(profile.profile_id, image_refs=["demo/e2e-review"],
                                occasion="business")
     # 用契约模型重新校验（含 INV-2 加法性、维度分之和、veto→unsuitable）
     Report.model_validate(report.model_dump(mode="json"))
     assert all(h.rule_id for h in report.rule_hits)
     assert report.meta.ruleset_version
+    # F-16：报告必须带分级诊断 + 一行证据质量
+    assert report.meta.diagnostics
+    assert report.meta.evidence_summary
     # 确定性：同输入第二次必须完全一致
     again = svc.create_report(profile.profile_id, image_refs=["demo/e2e-review"],
                               occasion="business")
@@ -473,6 +491,8 @@ def test_index_serves_frontend(client: TestClient) -> None:
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "AI 穿搭顾问" in r.text
+    # F-16：诊断渲染必须接进前端（否则后端的分级诊断全白做）
+    assert "证据质量" in r.text and "renderDiagnostics" in r.text
     # 零 CDN 依赖：不得有外部 script/link/@import/字体引用
     html = r.text.lower()
     for token in ("<script src=", "<link ", "@import", "fonts.googleapis", "cdn."):

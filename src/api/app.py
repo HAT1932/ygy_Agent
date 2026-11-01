@@ -166,16 +166,8 @@ def create_app(service: Any | None = None) -> FastAPI:
             banned_styles=req.banned_styles,
             explore_tags=req.explore_tags,
         )
-        warnings: list[str] = []
-        for o in outfits:
-            warnings.extend(o.parse_warnings or [])
-        from ..pipeline import summarize_warnings
-        return CreateProfileResponse(
-            profile_id=profile.profile_id,
-            profile=profile,
-            outfits=outfits,
-            warnings=summarize_warnings(warnings),
-        )
+        # 响应装配放在 pipeline（诊断要按照片分组，见 docs/10 F-16）
+        return _service(app).profile_response(profile, outfits)
 
     @app.get("/v1/profiles/{profile_id}", response_model=StyleProfile, tags=["profile"],
              summary="读取风格画像")
@@ -193,7 +185,7 @@ def create_app(service: Any | None = None) -> FastAPI:
     def parse_outfit(req: ParseOutfitRequest) -> ParseOutfitResponse:
         outfit, warnings = _service(app).parse_outfit(
             req.image_refs, req.occasion, req.season)
-        return ParseOutfitResponse(outfit=outfit, warnings=list(warnings))
+        return _service(app).parse_response(outfit, warnings)
 
     # ---------------- 报告 ----------------
 

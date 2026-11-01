@@ -28,7 +28,10 @@ from ..utils import make_id
 from .base import BaseParser, ParseResult, normalize_occasion, normalize_season
 from .mock import MockParser
 
-MAX_IMAGE_REFS = 5
+# 与 CreateProfileRequest.image_refs 的 MaxLen(10) 对齐。这个值只用于 probe()
+# 上报能力边界；真正的产品建议上限是 diagnostics.MAX_RECOMMENDED_REFS（5）——
+# 超过 5 张会摊薄 top1 权重（F-12），但不属于契约拒绝，只给诊断提醒。
+MAX_IMAGE_REFS = 10
 
 
 def _to_data_uri(img) -> str:

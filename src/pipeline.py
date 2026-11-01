@@ -34,6 +34,7 @@ from .contracts import (
     Suggestion,
     verdict_of,
 )
+from .diagnostics import MAX_RECOMMENDED_REFS, analyze
 from .utils import make_id, to_centi
 
 DATA_DIR = Path(__file__).resolve().parent.parent / ".data"
@@ -106,6 +107,34 @@ def summarize_warnings(warnings: list[str]) -> list[str]:
             order.append(w)
         counts[w] += 1
     return [w if counts[w] == 1 else f"{w} ×{counts[w]}" for w in order]
+
+
+def build_profile_response(profile: StyleProfile, outfits: list[Outfit],
+                           extras: list[str] | None = None) -> CreateProfileResponse:
+    """画像响应装配：``warnings`` 原样保留（机器码），另附分级诊断（docs/10 F-16）。
+
+    按**照片**分组再交给诊断：``outfits[i]`` 对应 ``image_refs[i]``，
+    这样诊断才能说出「第 5 张有手机遮挡」，而不是只丢一坨告警。
+    """
+    per_photo = [list(o.parse_warnings or []) for o in outfits]
+    extra = list(extras or [])
+    if len(outfits) > MAX_RECOMMENDED_REFS:
+        extra.append(f"PROFILE_REFS_ABOVE_RECOMMENDED:{len(outfits)}")
+    diags, summary = analyze(per_photo, extra)
+    return CreateProfileResponse(
+        profile_id=profile.profile_id,
+        profile=profile,
+        outfits=outfits,
+        warnings=summarize_warnings([w for ws in per_photo for w in ws]),
+        diagnostics=diags,
+        evidence_summary=summary,
+    )
+
+
+def build_parse_response(outfit: Outfit, warnings: list[str]) -> ParseOutfitResponse:
+    diags, summary = analyze([list(warnings or [])], noun="照片")
+    return ParseOutfitResponse(outfit=outfit, warnings=list(warnings or []),
+                               diagnostics=diags, evidence_summary=summary)
 
 
 def _data_source(parser: Any, outfit: Outfit) -> str:
@@ -369,6 +398,20 @@ class DemoService:
     def get_profile(self, profile_id: str) -> StyleProfile | None:
         return self._profiles.get(profile_id)
 
+    # ---------- 响应装配：raw warnings + 人可读诊断（docs/10 F-16）----------
+
+    def profile_response(self, profile: StyleProfile,
+                         outfits: list[Outfit]) -> CreateProfileResponse:
+        extras: list[str] = []
+        if str(getattr(self.parser, "name", "mock")) == "mock":
+            # 离线/降级：诊断必须直说"这不是你的照片"（F-13 硬保险的 UI 化）
+            extras.append("FALLBACK_MOCK:parser=mock")
+        return build_profile_response(profile, outfits, extras)
+
+    def parse_response(self, outfit: Outfit,
+                       warnings: list[str]) -> ParseOutfitResponse:
+        return build_parse_response(outfit, warnings)
+
     def get_report(self, report_id: str) -> Report | None:
         return self._reports.get(report_id)
 
@@ -448,6 +491,14 @@ class DemoService:
             0.4 + 0.6 * min(1.0, profile.n_ref_outfits / 3.0),
         ), 3)
 
+        # 诊断（F-16）：把这一套的原始告警投影成「分级 + 影响」，直接进 meta。
+        # 降级数据必须出 error 级诊断：mock 的 parse_warnings 是空的，但结论不可用
+        # 这件事比任何单条告警都重要（F-13 硬保险的 UI 化）。
+        data_source = _data_source(self.parser, outfit)
+        extras = ["FALLBACK_MOCK:parser=mock"] if data_source == "mock" else []
+        diags, evidence_summary = analyze([list(outfit.parse_warnings or [])],
+                                          extras, noun="照片")
+
         report = Report(
             report_id=report_id,
             outfit_id=outfit.outfit_id,
@@ -471,8 +522,10 @@ class DemoService:
                 embedding_model=str(self.encoder.config.get("mode", "hash")),
                 ruleset_version=self.settings.ruleset_version,
                 render_mode=render_mode,
-                data_source=_data_source(self.parser, outfit),
+                data_source=data_source,
                 parse_warnings=summarize_warnings(outfit.parse_warnings),
+                diagnostics=diags,
+                evidence_summary=evidence_summary,
                 embedding_config=self.encoder.config,
                 latency_ms={
                     "parse": int((t_parse - t0) * 1000),

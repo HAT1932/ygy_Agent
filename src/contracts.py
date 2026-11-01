@@ -20,7 +20,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
-CONTRACT_VERSION = "1.2.0"
+CONTRACT_VERSION = "1.3.0"
 RULESET_VERSION = "rs-2026.10.2"
 
 # --------------------------------------------------------------------------
@@ -495,6 +495,22 @@ class Suggestion(BaseModel):
     expected_gain: float = 0.0
 
 
+class Diagnostic(BaseModel):
+    """一条**人可读**的解析诊断（docs/10 F-16）。
+
+    与 ``parse_warnings`` 的区别：后者是给规则引擎吃的机器码，前者是给用户看的。
+    同 code 的多条原始告警合并成一条，``refs`` 标明是**第几张**参考（1-based）。
+    """
+
+    code: str                                   # 归并键，如 IMAGE_TOKENS / SUBJECT:OCCLUDED
+    severity: Literal["info", "warn", "error"] = "info"
+    label: str = ""                             # 中文一句话
+    detail: str = ""                            # 聚合后的具体值
+    impact: str = ""                            # 对分数/结论的影响
+    count: int = 1                              # 原始告警出现次数
+    refs: list[int] = Field(default_factory=list)  # 归属的参考序号（1-based）
+
+
 class ReportMeta(BaseModel):
     vlm_model: str = "mock"
     llm_model: str = "template"
@@ -506,6 +522,9 @@ class ReportMeta(BaseModel):
     # 硬保险：防止"以为在测自己的照片，其实在跑假数据"（docs/10 F-13）。
     data_source: Literal["vlm", "mock"] = "mock"
     parse_warnings: list[str] = Field(default_factory=list)
+    # 人可读诊断（docs/10 F-16）：分级 + 归属 + 影响。parse_warnings 保持原样不动。
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    evidence_summary: str = ""
     embedding_config: dict[str, Any] | None = None
     latency_ms: dict[str, int] = Field(default_factory=dict)
 
@@ -575,6 +594,8 @@ class CreateProfileResponse(BaseModel):
     profile: StyleProfile
     outfits: list[Outfit] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    evidence_summary: str = ""
 
 
 class ParseOutfitRequest(BaseModel):
@@ -586,6 +607,8 @@ class ParseOutfitRequest(BaseModel):
 class ParseOutfitResponse(BaseModel):
     outfit: Outfit
     warnings: list[str] = Field(default_factory=list)
+    diagnostics: list[Diagnostic] = Field(default_factory=list)
+    evidence_summary: str = ""
 
 
 class CreateReportRequest(BaseModel):
