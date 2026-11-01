@@ -140,11 +140,15 @@
   <!-- ======================= 1. 建画像 ======================= -->
   <section class="card" id="sec-profile">
     <h2>1 · 建立风格画像</h2>
-    <p class="hint">输入 1–10 个参考穿搭标识（演示用标识即可，每行一个）。标识里带关键词会命中对应演示搭配：<code>commute</code> 通勤 / <code>date</code> 约会 / <code>sport</code> 运动 / <code>formal</code> 正式 / <code>casual</code> 休闲 / <code>mono</code> 同色系 / <code>clash</code> 撞色 / <code>accessory</code> 配饰 / <code>season</code> 季节 / <code>formal_missing</code> 缺件。</p>
-    <label for="profileRefs">参考穿搭标识</label>
-    <textarea id="profileRefs" spellcheck="false">demo/commute-1
-demo/commute-2
-demo/mono-1</textarea>
+    <p class="hint"><b>填本地图片路径（每行一个，建议 3–5 张同风格）</b>，例如
+      <code>E:/Chuang_Yi_skill/assets/my-photos/ref-1.jpg</code>。
+      带引号也能识别（Windows「复制文件地址」会自动加引号）。
+      若填的是 <code>demo/xxx</code> 这类演示标识，系统会用 mock 假数据，
+      报告顶部会出现红色「不是基于真实照片」警示。</p>
+    <label for="profileRefs">参考穿搭图片路径</label>
+    <textarea id="profileRefs" spellcheck="false">E:/Chuang_Yi_skill/assets/my-photos/ref-1.jpg
+E:/Chuang_Yi_skill/assets/my-photos/ref-2.jpg
+E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
     <div class="row">
       <div class="col">
         <label for="profileNote">备注（可选）</label>
@@ -202,8 +206,8 @@ demo/mono-1</textarea>
         </select>
       </div>
     </div>
-    <label for="reviewRefs">待评审搭配标识（1–5 行，多行视为同一套的不同角度）</label>
-    <textarea id="reviewRefs" spellcheck="false">demo/commute-1</textarea>
+    <label for="reviewRefs">待评审搭配图片路径（1–5 行，多行视为同一套的不同角度）</label>
+    <textarea id="reviewRefs" spellcheck="false">E:/Chuang_Yi_skill/assets/my-photos/review.jpg</textarea>
     <button id="btnReview" type="button">生成评审</button>
     <div class="notice" id="reviewNotice"></div>
     <div id="reviewResult" class="hidden"></div>

@@ -322,6 +322,21 @@ def _allowed_color_terms(ctx: dict[str, Any]) -> set[str]:
     return allowed
 
 
+def sanitize_verdict_terms(text: str) -> str:
+    """把中文稿里泄漏的英文枚举判定词替换成中文。
+
+    实测：润色模型会写出"这套搭配总分为 76.0，判定为 suitable。"——因为上下文里
+    曾把枚举当判定词传进去。这里做一层兜底，避免用户看到英文，也避免整段被判废。
+    """
+    if not text:
+        return text
+    out = text
+    # 长词优先，避免 unsuitable 被 suitable 先匹配
+    for enum in ("strongly_recommended", "unsuitable", "suitable", "neutral"):
+        out = out.replace(enum, VERDICT_CN[enum])
+    return out
+
+
 def check_facts(text: str, ctx: dict[str, Any],
                 reference_text: str | None = None) -> list[str]:
     """校验 LLM 润色稿；返回违规码列表（空列表 = 通过）。

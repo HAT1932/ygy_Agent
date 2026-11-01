@@ -301,6 +301,30 @@ def test_qwen_fast_fails_without_network_for_demo_refs(monkeypatch):
 # ---------------------------------------------------------------------------
 # 5. 输入归一化 / 形状
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("raw, expected", [
+    ('"E:/a/1.jpg"', "E:/a/1.jpg"),                  # Windows「复制文件地址」自带双引号
+    ("  E:/a/2.jpg  ", "E:/a/2.jpg"),                # 首尾空白
+    ("'E:/a/3.jpg'", "E:/a/3.jpg"),                  # 单引号
+    ("\u201cE:/a/4.jpg\u201d", "E:/a/4.jpg"),        # 中文弯引号
+    ("file:///E:/a/5.jpg", "E:/a/5.jpg"),            # file:// 前缀
+    ('""E:/a/6.jpg""', "E:/a/6.jpg"),                # 套了两层
+    ("E:\\a\\7.jpg", r"E:\a\7.jpg"),                 # 反斜杠保持
+])
+def test_ref_normalization_strips_quotes_and_prefixes(raw, expected):
+    """回归：带引号的路径曾导致 Path().is_file() 恒假 → 静默降级 mock（docs/10 F-14）。"""
+    assert BaseParser.normalize_ref(raw) == expected
+
+
+def test_quoted_real_path_becomes_fetchable(tmp_path):
+    """带引号的真实文件必须能被识别为可解析图片，且不触发 mock 降级。"""
+    img = tmp_path / "ref1.png"
+    Image.new("RGB", (64, 96), "#1F2A44").save(img)
+    quoted = f'"{img}"'
+    refs = BaseParser._clean_refs([quoted])
+    assert refs == [str(img)]
+    assert QwenVLMParser._as_image_part(refs[0]) is not None
+
+
 def test_declared_occasion_and_season_are_respected():
     result = MockParser().parse_outfit(["demo/formal-1"], "正式", "冬季")
     assert result.outfit.occasion == "formal"

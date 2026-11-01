@@ -93,8 +93,36 @@ class BaseParser(abc.ABC):
 
     # -- 共用工具 ---------------------------------------------------------
     @staticmethod
+    def normalize_ref(raw: str) -> str:
+        """归一化单个 image_ref（用户从各处粘贴过来的路径形态差异很大）。
+
+        Windows 上「复制文件地址」会**自带双引号**：
+            "E:\\photos\\1.jpg"
+        如果不剥掉，``Path(...).is_file()`` 永远为 False，系统会静默降级成 mock
+        （实测过：用户以为在测自己的照片，其实拿到的是假数据，见 docs/10 F-13/F-14）。
+
+        一并处理：首尾空白、成对引号（" ' “ ”）、file:// 前缀、行内多余空白。
+        """
+        text = str(raw).strip()
+        # 成对剥引号（可能套了两层，最多剥 3 次）
+        for _ in range(3):
+            before = text
+            for pair in (('"', '"'), ("'", "'"), ("“", "”"), ("‘", "’")):
+                if len(text) >= 2 and text.startswith(pair[0]) and text.endswith(pair[1]):
+                    text = text[1:-1].strip()
+            if text == before:
+                break
+        # file:///E:/a.jpg → E:/a.jpg
+        for prefix in ("file:///", "file://"):
+            if text.lower().startswith(prefix):
+                text = text[len(prefix):]
+                break
+        return text.strip()
+
+    @staticmethod
     def _clean_refs(image_refs: list[str] | None) -> list[str]:
-        refs = [str(r).strip() for r in (image_refs or []) if str(r).strip()]
+        refs = [BaseParser.normalize_ref(r) for r in (image_refs or [])]
+        refs = [r for r in refs if r]
         if not refs:
             raise ValueError("image_refs 不能为空")
         return refs

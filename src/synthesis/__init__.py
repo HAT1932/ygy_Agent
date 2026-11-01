@@ -27,6 +27,7 @@ from .templates import (
     build_summary,
     check_facts,
     normalize_report_ctx,
+    sanitize_verdict_terms,
 )
 
 __all__ = [
@@ -68,6 +69,10 @@ def synthesize(report_ctx: dict[str, Any], *,
 
     if not polished:
         return reference_summary, suggestions, RenderMode.template_only
+
+    # 模型偶尔把枚举写成英文（"判定为 suitable"）。先归一成中文再校验，
+    # 既保证用户看到的是中文，也避免把这种小瑕疵整段判废（实测踩过）。
+    polished = sanitize_verdict_terms(polished)
 
     violations = check_facts(polished, llm_ctx, reference_summary)
     if violations:
