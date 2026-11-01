@@ -20,7 +20,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
-CONTRACT_VERSION = "1.3.0"
+CONTRACT_VERSION = "1.4.0"
 RULESET_VERSION = "rs-2026.10.2"
 
 # --------------------------------------------------------------------------
@@ -187,7 +187,13 @@ class Garment(BaseModel):
     length: str | None = None         # 短款 / 常规 / 长款
     formality: int | None = Field(default=None, ge=1, le=5)
     style_tags: list[str] = Field(default_factory=list)
-    pattern: str | None = None        # 纯色 / 条纹 / 格纹 …
+    # 细粒度风格线索（低腰/露脐/厚底/波点/豹纹/金属配件…）：给规则与文案当证据，
+    # 不进向量维度（避免改动 256 维标定）。见 docs/10 F-17。
+    style_words: list[str] = Field(default_factory=list)
+    pattern: str | None = None        # 纯色 / 条纹 / 格纹 …（受控 5 值）
+    pattern_detail: str | None = None # 图案细节自由词：波点 / 豹纹 / 拼接 / 千鸟格
+    # 商家标题（淘宝/抖音商城式）：风格词的富矿，用零成本方式复刻"商品标签"收益
+    merchant_title: str | None = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     evidence: str | None = None
 
@@ -233,6 +239,9 @@ class StyleTagScore(BaseModel):
 class StyleProfile(BaseModel):
     profile_id: str
     tags: list[StyleTagScore] = Field(default_factory=list)      # 已按权重降序
+    # 风格家族分布（Y2K/千禧辣妹/古早 归并为同一族）：只用于展示与解释，
+    # 不参与向量计算（向量仍吃 STYLE_TAGS 受控词）。见 docs/10 F-17。
+    family_tags: list[StyleTagScore] = Field(default_factory=list)
     banned_styles: list[str] = Field(default_factory=list)       # 用户明确不穿的风格
     explore_tags: list[str] = Field(default_factory=list)        # 用户想尝试的风格（F-08）
     preferred_formality: int | None = Field(default=None, ge=1, le=5)

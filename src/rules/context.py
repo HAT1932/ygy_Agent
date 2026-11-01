@@ -68,6 +68,7 @@ from ..contracts import (
     Slot,
     StyleProfile,
 )
+from ..styles import families_from_text, families_of
 
 __all__ = [
     "CTX_VARS",
@@ -487,6 +488,11 @@ def _garment_ctx(
             "material_family": fam,
             "pattern": _map_pattern(garment.pattern),
             "style_tags": sorted(str(tag) for tag in garment.style_tags),
+            # 细粒度风格线索 / 图案细节 / 商家标题（docs/10 F-17）：
+            # 不进向量维度，但能补足 style_tags 表达不了的信号与证据。
+            "style_words": [str(w) for w in (garment.style_words or [])],
+            "pattern_detail": str(garment.pattern_detail or ""),
+            "merchant_title": str(garment.merchant_title or ""),
             "formality": _r((garment.formality - 1) / 4.0) if garment.formality is not None else None,
             "area_ratio": _DEFAULT_AREA_RATIO.get(slot_key, 0.0),
             "is_sport_derived": _is_sport(garment),
@@ -544,7 +550,12 @@ def _color_section(gf: dict[str, dict[str, Any]]) -> dict[str, Any]:
                                      float(fields["color.saturation"] or 0.0))
     main_families = sorted(family_area, key=lambda name: (-_r(family_area[name], 6), name))
 
-    hues = [float(fields["color.hue"]) for _, fields in colored]
+    # 色相跨度只算**有彩色**：黑色/白色/灰色没有色相，把它们算进去会让
+    # "亮绿 + 黑" 变成 168° 撞色（实测 R-COLOR-009 因此误扣 2 分，docs/10 F-17）。
+    chromatic = [fields for _, fields in colored
+                 if float(fields["color.saturation"] or 0.0) >= 0.15]
+    hue_source = chromatic or [fields for _, fields in colored]
+    hues = [float(fields["color.hue"]) for fields in hue_source]
     hue_span = 0.0
     for i in range(len(hues)):
         for j in range(i + 1, len(hues)):
@@ -774,8 +785,12 @@ def _style_section(
         if count >= 2 or area >= 0.30 - 1e-9
     ]
 
+    # 同源度只算**主体单品**（上/下/外套/连衣裙/鞋）：
+    # 包和饰品天生是"中性连接件"，一件棕色托特包不该让整套被判成风格分裂。
+    # 实测：Y2K 波点套装配棕色通勤包 → 3 件里 1 件配饰不同源 → 直接被扣 4 分（F-17）。
+    MAIN_SLOTS = ("top", "bottom", "outer", "dress", "shoes")
     tagged: list[set[str]] = []
-    for key in SLOT_KEYS:
+    for key in MAIN_SLOTS:
         fields = gf[key]
         if fields["present"] and fields["style_tags"]:
             tagged.append(set(fields["style_tags"]))
@@ -808,9 +823,52 @@ def _style_section(
             top_overlap_style = style
             break
 
+    # ---- 家族级重合（docs/10 F-17）----
+    # 精确字符串比对会把「同一风格的不同说法」罚成「风格冲突」：
+    # 画像 top 是 Y2K/运动休闲，搭配标签是 日系少女/居家/学院风 → overlap=0 → -9 分。
+    # 家族层回答的是"是不是同一路风格"，字符串层回答"是不是同一个词"。
+    outfit_families = families_of(style_tags)
+    profile_families = families_of(top_styles)
+    family_overlap = sorted(outfit_families & profile_families)
+
+    fam_sets = [families_of(gf[key]["style_tags"]) for key in MAIN_SLOTS
+                if gf[key]["present"] and gf[key]["style_tags"]]
+    family_jaccard_min = 1.0
+    for i in range(len(fam_sets)):
+        for j in range(i + 1, len(fam_sets)):
+            union = fam_sets[i] | fam_sets[j]
+            if union:
+                family_jaccard_min = min(family_jaccard_min,
+                                         len(fam_sets[i] & fam_sets[j]) / len(union))
+
+    # 商家标题 / 细粒度风格词 / 图案细节 里的家族补充：
+    # 模型常把 Y2K 写成"日系少女"，但 merchant_title 往往写着"Y2K辣妹…"
+    text_families: set[str] = set()
+    for key in SLOT_KEYS:
+        fields = gf[key]
+        if not fields["present"]:
+            continue
+        text_families |= families_from_text(fields.get("merchant_title"))
+        text_families |= families_from_text(" ".join(fields.get("style_words") or []))
+        text_families |= families_from_text(fields.get("pattern_detail"))
+    all_outfit_families = outfit_families | text_families
+    family_overlap_all = sorted(all_outfit_families & profile_families)
+
     return {
         "outfit.style_tags": style_tags,
         "outfit.style_tag_jaccard_min": _r(jaccard_min),
+        "outfit.style.families": sorted(all_outfit_families),
+        "outfit.style.family_overlap_count": len(family_overlap_all),
+        "outfit.style.family_overlap": family_overlap_all,
+        "outfit.style.family_jaccard_min": _r(family_jaccard_min),
+        # 同源度的宽口径：词面 jaccard 与家族 jaccard 取大者。
+        # 只认字符串会让同义词被判成冲突；只认家族会让所有休闲系都算同源。
+        "outfit.style.same_source_jaccard": _r(max(jaccard_min, family_jaccard_min)),
+        "outfit.style.style_words": sorted({w for key in SLOT_KEYS
+                                            if gf[key]["present"]
+                                            for w in gf[key].get("style_words") or []}),
+        "outfit.style.merchant_titles": [gf[key]["merchant_title"] for key in SLOT_KEYS
+                                         if gf[key]["present"] and gf[key]["merchant_title"]],
         "outfit.style.primary_style": style_tags[0] if style_tags else "",
         "outfit.style.primary_matches_profile_top1": bool(
             style_tags and top_styles and style_tags[0] == top_styles[0]),

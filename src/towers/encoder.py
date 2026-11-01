@@ -32,6 +32,7 @@ from typing import Any, Iterable
 import numpy as np
 
 from ..contracts import Garment, Outfit, Slot, StyleProfile
+from ..styles import expand_outfit_tags
 from ..utils import canonical_json
 
 # ---------------------------------------------------------------------------
@@ -141,11 +142,16 @@ def _slot_value(slot: Any) -> str:
 
 
 def _garment_style_tags(outfit: Outfit) -> list[str]:
+    """原文标签 + 本体展开后的受控标签。
+
+    为什么不只用原文（docs/10 F-17）：struct 塔只认 ``STYLE_TAGS`` 那 25 个词，
+    模型写 ``Y2K / 千禧辣妹 / 日系少女`` 时这些维度全是 0，个性化信号被静默丢掉。
+    展开后 ``Y2K → 甜酷 + 街头潮流``，向量才真正吃到风格信息。
+    """
     tags: list[str] = []
-    for g in outfit.items:
-        for t in g.style_tags:
-            if t not in tags:
-                tags.append(t)
+    for t in expand_outfit_tags(t for g in outfit.items for t in g.style_tags):
+        if t not in tags:
+            tags.append(t)
     return tags
 
 

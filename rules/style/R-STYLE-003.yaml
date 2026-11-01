@@ -9,7 +9,9 @@ condition:
   - field: outfit.garment_count
     op: gte
     value: 3
-  - field: outfit.style_tag_jaccard_min
+  # 同源度的宽口径：词面 jaccard 与「风格家族」jaccard 取大者（docs/10 F-17）。
+  # 只认字符串会把同义词判成冲突（日系少女 vs 甜美 vs 少女感）。
+  - field: outfit.style.same_source_jaccard
     op: lt
     value: 0.2
   # F-09 豁免：高正式度（正装/礼服）是制服式组合，同源由品类保证，jaccard 会系统性误判
@@ -22,6 +24,7 @@ explain_template: '{outfit.garment_count} 件单品的风格同源度最低只�
 evidence_fields:
 - outfit.garment_count
 - outfit.style_tag_jaccard_min
+- outfit.style.same_source_jaccard
 - ctx.top_style_cn
 - outfit.formality
 source: domain_expert

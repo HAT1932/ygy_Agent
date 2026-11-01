@@ -404,6 +404,10 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
     var tags = (p.tags || []).map(function (t) {
       return '<span class="chip">' + esc(t.tag) + "<small>" + fmt(t.weight * 100, 0) + "%</small></span>";
     }).join("");
+    // 风格家族（把 Y2K/千禧/古早/原宿 之类同义词归并后的口径）——用户更容易对上自己的说法
+    var fams = (p.family_tags || []).map(function (t) {
+      return '<span class="chip">' + esc(t.tag) + "<small>" + fmt(t.weight * 100, 0) + "%</small></span>";
+    }).join("");
     var evidence = p.tag_evidence || {};
     var evKeys = Object.keys(evidence);
     var evRows = evKeys.length ? evKeys.map(function (k) {
@@ -430,6 +434,8 @@ E:/Chuang_Yi_skill/assets/my-photos/ref-3.jpg</textarea>
       '<span class="badge">置信度 ' + fmt((p.confidence || 0) * 100, 0) + "%</span>" +
       '<span class="badge">参考 ' + esc(p.n_ref_outfits || 0) + " 套</span></div>" +
       '<div class="chips" style="margin-top:14px">' + (tags || '<span class="muted small">暂无风格标签</span>') + "</div>" +
+      (fams ? '<div class="chips" style="margin-top:6px">' +
+        '<span class="small muted" style="margin-right:6px">风格族</span>' + fams + "</div>" : "") +
       '<div class="evidence"><div class="small muted" style="margin-bottom:6px">标签证据（可回溯到具体参考穿搭）</div>' +
       evRows + "</div>" +
       (diagHtml ? '<div class="evidence" style="margin-top:10px">' + diagHtml + "</div>" : "") +

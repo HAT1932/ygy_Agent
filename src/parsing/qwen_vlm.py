@@ -53,26 +53,74 @@ JSON 结构：
       "material": "中文细粒度材质，如 棉 / 羊毛 / 真丝 / 亚麻 / 牛仔 / 牛皮 / 针织 / 涤纶 / 金属",
       "fit": "tight|slim|regular|loose|oversized",
       "length": "crop|short|regular|long|maxi",
-      "silhouette": "可选中文描述，如 落肩",
-      "formality": 1到5的整数,
-      "style_tags": ["中文风格标签，如 极简 / 通勤知性 / 法式 / 运动休闲"],
+      "silhouette": "可选中文描述，如 落肩 / 低腰 / 垂坠袖",
+      "formality": "loungewear|casual|smart_casual|business|formal",
+      "style_tags": ["1-2 个真正主导的风格，必须从下面受控词表选"],
+      "style_words": ["1-4 个细粒度风格线索词，见下"],
       "pattern": "solid|stripe|check|floral|graphic",
+      "pattern_detail": "图案细节自由词（波点/豹纹/千鸟格/拼接/做旧水洗），纯色留空",
+      "merchant_title": "如果这件在淘宝/抖音商城售卖，商家标题怎么写（<=20 字，含风格词+版型词+品类）",
       "confidence": 0到1的小数,
       "evidence": "一句话视觉证据"
     }
   ],
   "confidence": 0到1的小数
 }
+受控风格词表（style_tags 必须从这里选）：
+极简 / 通勤知性 / 法式 / 甜美 / 运动休闲 / 街头潮流 / 商务正装 / 机能风 / 工装 /
+正式 / 优雅 / 经典 / 简约 / 商务 / 浪漫 / 甜酷 / 华丽 / 潮流 / 休闲 / 居家 / 舒适 /
+洛丽塔 / 硬核工装 / 复古 / 学院
+细粒度风格线索（style_words，用来表达词表覆盖不了的细节）：
+低腰 / 高腰 / 露脐 / 露肩 / 厚底 / 垂坠袖 / 超大廓形 / 短款 / 做旧水洗 / 拼接 /
+金属配件 / 铆钉 / 蕾丝 / 白袜 / 百褶 / 绑带 / 亮片 / 叠戴 / 卡通印花 / 字母印花 /
+波点 / 豹纹 / 格纹 / 条纹 / 千禧感 / 古早感 / 原宿感 / 街头感
 规则：
 1. 看不见的字段不要编造：无法判断的 fit/length/pattern/material 用 null。
 2. 颜色必须给真实 hex，不要用 #000000 之类的占位色；不确定时给置信度 < 0.6。
-3. 每套至少 1 件；只输出 JSON 对象本身。"""
+3. 每套至少 1 件；只输出 JSON 对象本身。
+4. style_tags 每件最多 2 个，只给真正主导的风格。不要把 休闲/舒适/个性 这类泛词堆满，
+   也不要给每件写不同的风格（会被判成"单品风格不同源"）。整套应有一个明确主基调。
+5. formality 用上面的英文词，不要给数字（1=家居, 2=休闲, 3=半正式, 4=商务, 5=礼服）。
+6. 波点/豹纹/拼接等不要塞进 pattern：写进 pattern_detail 与 style_words；
+   pattern 只填 solid|stripe|check|floral|graphic。
+7. 风格判读提示（重要）：低腰 + 露脐/短款 + 厚底鞋 + 波点/豹纹 + 金属配件 + 超大廓形 +
+   白袜玛丽珍 + 老照片质感，通常属于 Y2K / 千禧 / 古早 / 原宿 谱系，
+   风格的受控词应写 甜酷 或 街头潮流，并把 千禧感/古早感/波点 写进 style_words。
+   不要只因为"看起来日系/可爱"就写成 甜美 / 学院。
+8. merchant_title 用商家口吻，例如「Y2K辣妹 波点连帽卫衣 宽松薄款 甜酷百搭」。
+9. 不要漏单品：画面下缘只露出鞋头/袜子时，也要输出 shoes 条目（category 注明「部分可见」）；
+   明显的包、袜子、腰带、项链、帽子各列一条 accessory。整套单品总数不超过 6 件。
+10. 判定"风格主导词"时先看**廓形与配件组合**（低腰/短款/厚底/金属/图案），再看颜色与气质，
+    避免把千禧街头风误判成"日系少女 / 学院风 / 居家"。"""
 
 _USER_HINT = """请解析这套穿搭中的全部单品。
 用户声明的场合：{occasion}
 用户声明的季节：{season}
 参考图片数量：{n}。
 若参考图片只是标识而非真实图像，请按标识语义给出一个合理的最小结构，并把 confidence 设为 0.3 以下，同时在 evidence 中说明。"""
+
+# 正式度描述词 → 契约 1..5（1=家居, 5=礼服）。用词而不是裸数字，
+# 是因为数字方向没有定义：实测模型把 卫衣/卫裤/运动鞋 全标成 5，
+# 归一化后变成"最正式"，直接把 D4 与 R-STYLE-006 带偏（docs/10 F-17）。
+_FORMALITY_DESC: dict[str, int] = {
+    "loungewear": 1, "家居": 1, "居家": 1, "睡衣": 1, "极休闲": 1,
+    "casual": 2, "休闲": 2, "日常": 2,
+    "smart_casual": 3, "smart casual": 3, "business_casual": 3, "商务休闲": 3, "半正式": 3,
+    "business": 4, "商务": 4, "正装": 4,
+    "formal": 5, "礼服": 5, "晚宴": 5, "盛装": 5,
+}  # noqa: E501
+
+#: 方向兜底：模型偶发把 5 当"最休闲"时，用品类关键词做确定性夹逼
+_FORMALITY_CAP: tuple[tuple[int, tuple[str, ...]], ...] = (
+    (1, ("睡衣", "家居服", "家居")),
+    (2, ("卫衣", "连帽", "t恤", "短袖", "运动", "卫裤", "短裤", "牛仔", "背心",
+         "吊带", "打底", "热裤", "帆布", "板鞋", "乐福", "拖鞋")),
+)
+_FORMALITY_FLOOR: tuple[tuple[int, tuple[str, ...]], ...] = (
+    (5, ("礼服", "婚纱", "晚宴")),
+    (4, ("西装", "正装", "西服", "套裙")),
+    (3, ("衬衫", "西裤", "皮鞋", "高跟鞋", "风衣", "大衣", "牛津", "德比")),
+)
 
 # 中文别名 → 受控枚举（与 rules-author 的 context 归一化保持一致）
 _FIT_ALIASES = {
@@ -113,15 +161,38 @@ def _clamp(value: Any, low: float, high: float, default: float) -> float:
     return max(low, min(high, number))
 
 
-def _formality_to_contract(value: Any) -> int | None:
-    """归一化到 contracts.Garment.formality 的 int 1..5（兼容 0..1 float）。"""
+def _formality_to_contract(value: Any, category: str = "") -> int | None:
+    """归一化到 contract ``Garment.formality`` 的 int 1..5。
+
+    两条路径：
+      · 描述词（推荐）：``casual`` → 2，方向无歧义；
+      · 数字（兼容旧输出 / 0..1 口径）：先按 docs/03 归一，再按品类关键词夹逼。
+        夹逼是兜底——实测模型会把卫衣/卫裤/运动鞋全标成 5，不夹逼就把
+        "最休闲"读成"最正式"，污染 D4 与 R-STYLE-006（docs/10 F-17）。
+    """
+    if isinstance(value, str):
+        key = value.strip().lower()
+        if key in _FORMALITY_DESC:
+            return _FORMALITY_DESC[key]
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return None
     try:
         number = float(value)
     except (TypeError, ValueError):
         return None
     if number <= 1.0:  # docs/03 的 0..1 口径
         number = number * 4.0 + 1.0
-    return max(1, min(5, int(round(number))))
+    guess = max(1, min(5, int(round(number))))
+    cat = str(category or "").lower()
+    for cap, words in _FORMALITY_CAP:
+        if any(w.lower() in cat for w in words):
+            return min(guess, cap)
+    for floor, words in _FORMALITY_FLOOR:
+        if any(w.lower() in cat for w in words):
+            return max(guess, floor)
+    return guess
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -439,7 +510,13 @@ class QwenVLMParser(BaseParser):
         pattern = _PATTERN_ALIASES.get(str(pattern_raw).strip().lower()) if pattern_raw else None
 
         style_tags = raw.get("style_tags")
-        tags = [str(t) for t in style_tags] if isinstance(style_tags, list) else []
+        tags = [str(t).strip() for t in style_tags] if isinstance(style_tags, list) else []
+        tags = [t for t in tags if t][:3]  # 每件最多 3 个，防标签膨胀稀释同源度
+        style_words = raw.get("style_words")
+        words = [str(w).strip() for w in style_words][:6] if isinstance(style_words, list) else []
+
+        pattern_detail = raw.get("pattern_detail")
+        merchant_title = raw.get("merchant_title")
 
         material = raw.get("material")
         category = str(raw.get("category") or "").strip()
@@ -453,9 +530,12 @@ class QwenVLMParser(BaseParser):
             fit=fit,
             silhouette=str(raw["silhouette"]) if raw.get("silhouette") else None,
             length=length,
-            formality=_formality_to_contract(raw.get("formality")),
+            formality=_formality_to_contract(raw.get("formality"), category),
             style_tags=tags,
+            style_words=[w for w in words if w],
             pattern=pattern,
+            pattern_detail=str(pattern_detail).strip() if pattern_detail else None,
+            merchant_title=str(merchant_title).strip() if merchant_title else None,
             confidence=_clamp(raw.get("confidence"), 0.0, 1.0, 0.5),
             evidence=str(evidence) if evidence else None,
         )

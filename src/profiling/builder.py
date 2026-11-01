@@ -17,6 +17,7 @@ import math
 from typing import Iterable
 
 from ..contracts import Outfit, Slot, StyleProfile, StyleTagScore
+from ..styles import families_from_text, family_name
 from ..towers import TowerEncoder
 from ..utils import make_id, round_half_up
 
@@ -152,6 +153,34 @@ def build_profile(outfits: list[Outfit],
     tags = [StyleTagScore(tag=tag, weight=max(0.0, min(1.0, score)))
             for score, tag in ranked[:MAX_TAGS]]
 
+    # --- 风格家族分布（docs/10 F-17）---
+    # 为什么单独给一层：模型现在只在 style_tags 里写受控词（甜酷/街头潮流），
+    # 把 Y2K/千禧/古早 放进 style_words 与 merchant_title。用户想看到的是后者。
+    # 家族层只用于**展示与解释**，不参与向量（向量仍吃 STYLE_TAGS 受控词）。
+    family_scores: dict[str, float] = {}
+    for outfit in ordered:
+        votes = _tag_votes(outfit)
+        total = sum(votes.values())
+        if total <= 0.0:
+            continue
+        fam_votes: dict[str, float] = {}
+        for tag, weight in votes.items():
+            name = family_name(tag)
+            if name:
+                fam_votes[name] = fam_votes.get(name, 0.0) + weight
+        # style_words 与商家标题里也藏着家族（"Y2K辣妹 波点卫衣"）
+        for garment in outfit.items:
+            for text in (garment.merchant_title, " ".join(garment.style_words or [])):
+                for name in families_from_text(text):
+                    fam_votes.setdefault(name, 0.0)
+        for name, raw in fam_votes.items():
+            family_scores[name] = family_scores.get(name, 0.0) + raw / total
+    for name in family_scores:
+        family_scores[name] = family_scores[name] / n_ref if n_ref else 0.0
+    family_tags = [StyleTagScore(tag=name, weight=max(0.0, min(1.0, round(score, 6))))
+                   for name, score in sorted(family_scores.items(),
+                                             key=lambda kv: (-kv[1], kv[0]))[:MAX_TAGS]]
+
     mean_parse_confidence = (
         sum(o.confidence for o in ordered) / n_ref if n_ref else 0.0
     )
@@ -165,6 +194,7 @@ def build_profile(outfits: list[Outfit],
     return StyleProfile(
         profile_id=resolved_id,
         tags=tags,
+        family_tags=family_tags,
         # MVP 的冻结契约里没有 forbidden_styles 输入（CreateProfileRequest 只有
         # image_refs/note/persist），因此这里不臆断"禁用风格"；上层如需可用
         # model_copy(update={"banned_styles": [...]}) 注入，避免误触发 hard 规则。

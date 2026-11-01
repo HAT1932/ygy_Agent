@@ -432,8 +432,15 @@ def test_dimension_gating_skips_all_rules(dimension: DimensionCode,
 
 
 def test_suppression_drops_less_specific_rule(engine: RuleEngine) -> None:
+    import copy
+
     fixture = load_fixture("R-COLOR-008")
-    case = next(case for case in fixture["cases"] if case["expect"] == "hit")
+    case = copy.deepcopy(next(case for case in fixture["cases"] if case["expect"] == "hit"))
+    # 制造**真实的**撞色：黑白灰没有色相，不能算撞色（docs/10 F-17）。
+    # 原夹具是 白+藏青+黑，旧实现把「白(hue=0) vs 藏青(222°)」算成 138° 撞色 ——
+    # 那是色相提取的假象；现在只统计有彩色，所以这里显式给两件高饱和撞色单品。
+    case["outfit"]["items"][0]["colors"] = [{"hex": "#E60012"}]   # 正红（衬衫，条纹）
+    case["outfit"]["items"][1]["colors"] = [{"hex": "#00A0C8"}]   # 青蓝（长裤，格纹）
     outfit, profile, features = build_case(case, "suppress-color")
     ctx = build_context(outfit, profile, features)
     rule_009 = next(rule for rule in engine.rules if rule.rule_id == "R-COLOR-009")

@@ -5,9 +5,15 @@ title: 与画像无交集
 severity: soft
 scope: outfit
 condition:
-  field: outfit.style.top_overlap_count
-  op: eq
-  value: 0
+  # 词面完全无交集不算数：还要「风格家族」也无交集（docs/10 F-17）。
+  # Y2K vs 千禧辣妹 vs 日系少女 常被判成 0 重叠，但它们是同一路风格。
+  all:
+  - field: outfit.style.top_overlap_count
+    op: eq
+    value: 0
+  - field: outfit.style.family_overlap_count
+    op: eq
+    value: 0
 effect: penalty
 score_impact:
   dimension: D2
@@ -15,6 +21,7 @@ score_impact:
 explain_template: 这套搭配的风格（{outfit.style_tags|list}）与你常穿的 {profile.top_styles|list} 完全没有交集。
 evidence_fields:
 - outfit.style.top_overlap_count
+- outfit.style.family_overlap_count
 - outfit.style_tags
 - profile.top_styles
 - ctx.top_style_cn
