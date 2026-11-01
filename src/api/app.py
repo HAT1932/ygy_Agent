@@ -169,11 +169,12 @@ def create_app(service: Any | None = None) -> FastAPI:
         warnings: list[str] = []
         for o in outfits:
             warnings.extend(o.parse_warnings or [])
+        from ..pipeline import summarize_warnings
         return CreateProfileResponse(
             profile_id=profile.profile_id,
             profile=profile,
             outfits=outfits,
-            warnings=warnings,
+            warnings=summarize_warnings(warnings),
         )
 
     @app.get("/v1/profiles/{profile_id}", response_model=StyleProfile, tags=["profile"],

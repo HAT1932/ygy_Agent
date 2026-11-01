@@ -93,6 +93,34 @@ def compute_assessability(outfit: Outfit, profile: StyleProfile) -> dict[str, fl
              (DimensionCode.D4, d4), (DimensionCode.D5, d5))}
 
 
+def summarize_warnings(warnings: list[str]) -> list[str]:
+    """告警去重并计数：同一告警出现 8 次 → ``xxx ×8``（保留首次出现顺序）。
+
+    为什么需要：一个 8 张参考的请求会生成 8 组重复告警，把真正的关键信息淹掉。
+    """
+    counts: dict[str, int] = {}
+    order: list[str] = []
+    for w in warnings or []:
+        if w not in counts:
+            counts[w] = 0
+            order.append(w)
+        counts[w] += 1
+    return [w if counts[w] == 1 else f"{w} ×{counts[w]}" for w in order]
+
+
+def _data_source(parser: Any, outfit: Outfit) -> str:
+    """判定这份结果的解析数据是**真实模型**产出还是**降级 mock**。
+
+    这是防"以为在测自己的照片、其实在跑假数据"的硬保险（docs/10 F-13）：
+    只要解析走了 mock（离线、无 key、图片不可读、请求失败），就标记 mock。
+    """
+    if str(getattr(parser, "name", "mock")) == "mock":
+        return "mock"
+    if any("FALLBACK_MOCK" in str(w) for w in (outfit.parse_warnings or [])):
+        return "mock"
+    return "vlm"
+
+
 def _subject_quality(outfit: Outfit) -> float:
     """从 parse_warnings 里取裁剪器给出的输入质量（缺省 1.0，不惩罚）。"""
     for w in (outfit.parse_warnings or []):
@@ -443,7 +471,8 @@ class DemoService:
                 embedding_model=str(self.encoder.config.get("mode", "hash")),
                 ruleset_version=self.settings.ruleset_version,
                 render_mode=render_mode,
-                parse_warnings=list(outfit.parse_warnings),
+                data_source=_data_source(self.parser, outfit),
+                parse_warnings=summarize_warnings(outfit.parse_warnings),
                 embedding_config=self.encoder.config,
                 latency_ms={
                     "parse": int((t_parse - t0) * 1000),

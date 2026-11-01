@@ -175,8 +175,12 @@ class QwenVLMParser(BaseParser):
         # 避免「2 次重试 × 超时」的无谓延迟与计费。
         fetchable = [r for r in refs if self._as_image_part(r) is not None]
         if not fetchable:
-            return self._fallback_result(refs, occasion, season,
-                                         "VLM_SKIPPED_NO_FETCHABLE_IMAGE_FALLBACK_MOCK")
+            # 带上诊断信息：调用方（UI/API）能直接看出"是标识不是图片"，而不是只看到一句模糊告警
+            sample = (refs[0] if refs else "")[:60]
+            return self._fallback_result(
+                refs, occasion, season,
+                f"VLM_SKIPPED_NO_FETCHABLE_IMAGE_FALLBACK_MOCK"
+                f":refs={len(refs)}:sample={sample}:hint=not_a_file_or_url")
 
         # 人形检测 + 主体裁剪：把整张图换成「主要人物的干净裁剪」再送模型。
         # 解决两个实测问题：多人/背景干扰，以及"人不在画面里还硬打分"。

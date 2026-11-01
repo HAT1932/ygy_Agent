@@ -488,8 +488,18 @@ demo/mono-1</textarea>
     var warnings = (m.parse_warnings || []).map(esc).join("；") || "无";
     var latency = m.latency_ms || {};
     var latStr = Object.keys(latency).map(function (k) { return k + " " + latency[k] + "ms"; }).join(" · ") || "—";
+    // 数据来源硬保险：mock 数据下所有结论都不可用于评估，必须显式警示
+    var sourceBanner = (m.data_source === "mock")
+      ? '<div class="notice err" style="margin-bottom:10px"><b>⚠ 这份报告不是基于真实照片</b><br>' +
+        "解析走了 mock（离线模式 / 无 key / 图片路径读不到）。分数与结论仅用于验证链路，" +
+        "<b>不能用来判断系统好坏，也不能作为你的照片被正确识别的证据</b>。" +
+        "请改用真实图片的绝对路径（如 <code>E:/Chuang_Yi_skill/assets/my-photos/ref-1.jpg</code>），" +
+        "或先运行 <code>python scripts/check_photo.py &lt;你的照片&gt;</code> 预检。" +
+        "</div>"
+      : "";
 
     out.innerHTML =
+      sourceBanner +
       '<div class="score-head">' +
         '<div class="score-big">' + fmt(r.total_score) + '<span class="unit">/ 100</span></div>' +
         '<div><span class="verdict ' + v.cls + '">' + esc(v.label) + "</span>" +

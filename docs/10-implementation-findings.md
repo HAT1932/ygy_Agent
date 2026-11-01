@@ -438,6 +438,60 @@
 
 ---
 
+## F-13 · 静默降级：把「占位标识」当照片，会拿到一份假数据报告（已加硬保险）
+
+### 现象
+
+用户贴了 8 个参考标识，页面返回了完整的画像（10 个风格标签 + 每个标签的 `oft_xxx` 证据），
+但解析告警里是：
+
+```
+VLM_SKIPPED_NO_FETCHABLE_IMAGE_FALLBACK_MOCK；VLM_MODEL:qwen3.7-plus   （重复 8 次）
+```
+
+### 这是什么
+
+**不是报错，是"没在解析你的照片"**：8 个标识没有一个能解析成真实图片文件
+（既不是已存在的本地文件，也不是 http(s) 或 data URI），所以系统跳过了真实 qwen3.7-plus，
+**用 mock 生成了 8 套虚构搭配**。页面上的标签与 `oft_` 证据全部来自这些假搭配，
+与用户照片无关。
+
+`VLM_MODEL:qwen3.7-plus` 同时出现，说明 key 与在线模式都正常——问题只在**路径**。
+
+### 根因
+
+`QwenVLMParser.parse_outfit` 里有一条"快速失败"守卫：为了不给演示标识白付两次超时与计费，
+若所有 ref 都不可 fetch，就直接降级 mock。这个设计是对的（省时省钱），
+但**降级太安静**：只在 `parse_warnings` 里留一行，用户很容易把假画像当真。
+
+触发方式（实测复现）：直接使用 UI 文本框里预填的 `demo/commute-1` 之类的占位标识。
+
+### 已修（4 处加固）
+
+| # | 改动 | 效果 |
+|---|---|---|
+| 1 | `ReportMeta.data_source: "vlm" \| "mock"` | 报告**自己声明**数据来源；只要解析走了 mock 就标 `mock` |
+| 2 | 前端红色横幅 | `data_source == mock` 时在报告顶部明示"这份报告不是基于真实照片，不能用来判断系统好坏" |
+| 3 | 告警去重计数 | `VLM_MODEL:qwen3.7-plus ×3`，让关键信息不被 16 行重复告警淹没 |
+| 4 | 告警带诊断 | `..._FALLBACK_MOCK:refs=1:sample=demo/commute-1:hint=not_a_file_or_url`，直接指出是哪个标识、为什么被拒 |
+
+实测两种输入：
+
+```
+A 占位标识 : data_source=mock   total=78.0   ← 假数据（分数看似"很好"，但没有意义）
+B 真实图片 : data_source=vlm    total=47.2   verdict=unsuitable   ← 真实结论
+```
+
+> 值得注意：A 的 mock 数据反而给出 78 分「适合」，比真实图片的 47.2 分漂亮得多。
+> **假数据往往更"好看"**，这正是必须显式标注来源的原因。
+
+### 给使用者的判定口诀
+
+看到 `data_source=mock` 或 `VLM_SKIPPED_NO_FETCHABLE_IMAGE` → **立刻停下**，
+用 `scripts/check_photo.py` 预检路径，别拿这份报告下任何结论。
+
+---
+
 ## 附：实现与文档的偏差清单（已接受）
 
 | # | 偏差 | 理由 |

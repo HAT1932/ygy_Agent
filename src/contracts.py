@@ -1,4 +1,4 @@
-﻿"""契约层 —— 全系统唯一的数据形状定义（FROZEN）。
+"""契约层 —— 全系统唯一的数据形状定义（FROZEN）。
 
 来源：docs/00-baseline.md（v0.2）§5/§6/§8 与 docs/04-api-and-data-contract.md。
 改动本文件必须同步 docs/04 并 bump CONTRACT_VERSION；其他模块不得自定义重复结构。
@@ -502,6 +502,9 @@ class ReportMeta(BaseModel):
     ruleset_version: str = RULESET_VERSION
     contract_version: str = CONTRACT_VERSION
     render_mode: RenderMode = RenderMode.template_only
+    # 数据来源：vlm = 真实模型解析的真实图片；mock = 降级/离线，**结论不可用于评估**
+    # 硬保险：防止"以为在测自己的照片，其实在跑假数据"（docs/10 F-13）。
+    data_source: Literal["vlm", "mock"] = "mock"
     parse_warnings: list[str] = Field(default_factory=list)
     embedding_config: dict[str, Any] | None = None
     latency_ms: dict[str, int] = Field(default_factory=dict)
